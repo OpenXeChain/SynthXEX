@@ -18,20 +18,7 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
+#include "../common/common.h"
+#include "../common/datastorage.h"
 
-// Program identifiers
-#define VERSION "v0.0.1"
-#define COPYRIGHT "2024"
-#define VERSION_STRING "SynthXEX v0.0.1"
-
-// Return values
-#define SUCCESS 0
-
-#define ERR_UNKNOWN_DATA_REQUEST -1;
-
-void infoPrint(char *str);
+void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader);

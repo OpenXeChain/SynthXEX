@@ -18,20 +18,16 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
+#include <sys/stat.h>
+#include "../common/common.h"
+#include "../common/datastorage.h"
 
-// Program identifiers
-#define VERSION "v0.0.1"
-#define COPYRIGHT "2024"
-#define VERSION_STRING "SynthXEX v0.0.1"
+// Utility functions to get data from PE file, byte-swapping as required
+uint32_t get32BitFromPE(FILE *pe);
+uint32_t get16BitFromPE(FILE *pe);
 
-// Return values
-#define SUCCESS 0
+// Returns true if PE is valid Xbox 360 PE, else false
+bool validatePE(FILE *pe);
 
-#define ERR_UNKNOWN_DATA_REQUEST -1;
-
-void infoPrint(char *str);
+// Gets data required for XEX building from PE
+int getHdrData(FILE *pe, struct peData *peData, uint8_t flags);

@@ -18,6 +18,12 @@
 
 #include <getopt.h>
 #include "common/common.h"
+#include "common/datastorage.h"
+#include "getdata/getdata.h"
+#include "setdata/populateheaders.h"
+#include "setdata/pagedescriptors.h"
+#include "placer/placer.h"
+#include "write/writexex.h"
 
 void dispVer()
 {
@@ -34,7 +40,7 @@ void dispVer()
 
 void dispHelp(char **argv)
 {
-  printf("\nUsage: %s [OPTIONS]\n\n", argv[0]);
+  printf("\nUsage: %s [OPTION] <ARG>\n\n", argv[0]);
   printf("Options:\n");
   printf("-h,\t--help,\t\tShow this information\n");
   printf("-v,\t--version,\tShow version and copyright information\n");
@@ -107,6 +113,50 @@ int main(int argc, char **argv)
       infoPrint("ERROR: Xexfile output expected but not found. Aborting.");
       return -1;
     }
+
+  // Opening the files now that they've been validated
+  FILE *pe = fopen(basefilePath, "r");
+  FILE *xex = fopen(xexfilePath, "w+");
+
+  struct offsets offsets;
+  struct xexHeader xexHeader;
+  struct secInfoHeader secInfoHeader;
+  struct peData peData;
+
+  if(!validatePE(pe))
+    {
+      infoPrint("ERROR: Basefile is not Xbox 360 PE. Aborting.");
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
   
+  if(getHdrData(pe, &peData, 0) != 0)
+    {
+      infoPrint("ERROR: Unknown error in data retrieval from basefile. Aborting.");
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+
+  // Setting final XEX data structs
+  setXEXHeader(&xexHeader);
+  setSecInfoHeader(&secInfoHeader, &peData, 0x2, 0x823DFC64); // TEMP IMPORT TABLE COUNT & EXPORT TABLE ADDR
+  setPageDescriptors(pe, &secInfoHeader);
+
+  // Setting data positions...
+  placeStructs(&offsets, &xexHeader, &secInfoHeader);
+  
+  // Finally, write out all of the XEX data to file
+  if(writeXEX(&xexHeader, &secInfoHeader, &offsets, xex) != 0)
+    {
+      infoPrint("ERROR: Unknown error in XEX write routine. Aborting.");
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+  
+  fclose(pe);
+  fclose(xex);
   return 0;
 }

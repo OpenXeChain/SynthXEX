@@ -18,20 +18,8 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
+#include "../common/common.h"
+#include "../common/datastorage.h"
 
-// Program identifiers
-#define VERSION "v0.0.1"
-#define COPYRIGHT "2024"
-#define VERSION_STRING "SynthXEX v0.0.1"
-
-// Return values
-#define SUCCESS 0
-
-#define ERR_UNKNOWN_DATA_REQUEST -1;
-
-void infoPrint(char *str);
+void setXEXHeader(struct xexHeader *xexHeader);
+void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t TEMPIMPORTCOUNT, uint32_t TEMPEXPORTADDR);
