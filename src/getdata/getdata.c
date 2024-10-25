@@ -107,6 +107,48 @@ bool validatePE(FILE *pe) // True if valid, else false
   return true; // Checked enough, this is an Xbox 360 PE file
 }
 
+int getSectionRwxFlags(FILE *pe, struct sections *sections)
+{
+  fseek(pe, 0x3C, SEEK_SET);
+  uint32_t peOffset = get32BitFromPE(pe);
+
+  fseek(pe, peOffset + 0x6, SEEK_SET); // 0x6 == section count
+  sections->count = get16BitFromPE(pe);
+  
+  sections->sectionPerms = calloc(sections->count, sizeof(struct sectionPerms)); // free() is called for this in setdata
+  fseek(pe, peOffset + 0xF8, SEEK_SET); // 0xF8 == beginning of section table
+
+  for(uint16_t i = 0; i < sections->count; i++)
+    {
+      fseek(pe, 0x14, SEEK_CUR); // Seek to raw offset of section
+      sections->sectionPerms[i].rawOffset = get32BitFromPE(pe);
+
+      fseek(pe, 0xC, SEEK_CUR); // Now progress to characteristics, where we will check flags
+      uint32_t characteristics = get32BitFromPE(pe);
+
+      if(characteristics & PE_SECTION_FLAG_EXECUTE)
+	{
+	  sections->sectionPerms[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
+	}
+      else if(characteristics & PE_SECTION_FLAG_WRITE || characteristics & PE_SECTION_FLAG_DISCARDABLE)
+	{
+	  sections->sectionPerms[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
+	}
+      else if(characteristics & PE_SECTION_FLAG_READ)
+	{
+	  sections->sectionPerms[i].permFlag = XEX_SECTION_RODATA | 0b10000;
+	}
+      else
+	{
+	  return ERR_MISSING_SECTION_FLAG;
+	}
+
+      // Don't need to progress any more to get to beginning of next entry, as characteristics is last field
+    }
+  
+  return SUCCESS;
+}
+
 int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
 {
   // Get header data required for ANY XEX
@@ -132,6 +174,9 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
   peData->tlsAddr = get32BitFromPE(pe);
   peData->tlsSize = get32BitFromPE(pe);
 
+  // Page RWX flags
+  getSectionRwxFlags(pe, &(peData->sections));
+  
   // No flags supported at this time (will be used for getting additional info, for e.g. other optional headers)
   if(flags)
     {

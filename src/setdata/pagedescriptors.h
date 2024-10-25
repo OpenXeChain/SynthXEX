@@ -22,4 +22,4 @@
 #include "../common/crypto.h"
 #include "../common/datastorage.h"
 
-void setPageDescriptors(FILE *pe, struct secInfoHeader *secInfoHeader);
+void setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader);

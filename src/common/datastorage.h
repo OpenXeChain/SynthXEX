@@ -47,6 +47,30 @@
 #define XEX_SYS_BACKGROUND_DL      0x00080000
 #define XEX_SYS_ALLOW_CONTROL_SWAP 0x40000000
 
+// RWX flags (PE)
+#define PE_SECTION_FLAG_DISCARDABLE 0x02000000
+#define PE_SECTION_FLAG_EXECUTE     0x20000000
+#define PE_SECTION_FLAG_READ        0x40000000
+#define PE_SECTION_FLAG_WRITE       0x80000000
+
+// RWX flags (XEX)
+#define XEX_SECTION_CODE   0x1
+#define XEX_SECTION_RWDATA 0x2
+#define XEX_SECTION_RODATA 0x3
+
+// Page RWX flags
+struct sections
+{
+  uint16_t count;
+  struct sectionPerms *sectionPerms;
+};
+
+struct sectionPerms
+{
+  uint8_t permFlag;
+  uint32_t rawOffset;
+};
+
 // Data structs
 struct peData
 {
@@ -55,6 +79,7 @@ struct peData
   uint32_t entryPoint;
   uint32_t tlsAddr;
   uint32_t tlsSize;
+  struct sections sections;
 };
 
 // Most of these are 8-byte aligned. Basefile is 4KiB aligned.

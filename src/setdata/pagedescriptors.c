@@ -18,7 +18,23 @@
 
 #include "pagedescriptors.h"
 
-void setPageDescriptors(FILE *pe, struct secInfoHeader *secInfoHeader)
+uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t page)
+{
+  uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
+  uint32_t currentOffset = page * pageSize;
+  
+  for(int i = peData->sections.count - 1; i >= 0; i--)
+    {
+      if(currentOffset >= peData->sections.sectionPerms[i].rawOffset)
+	{
+	  return peData->sections.sectionPerms[i].permFlag;
+	}
+    }
+
+  return XEX_SECTION_RODATA; // We're in the PE header, so RODATA
+}
+
+void setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
 {
   uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
   secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor)); // The free() for this is called after written to XEX
@@ -26,19 +42,8 @@ void setPageDescriptors(FILE *pe, struct secInfoHeader *secInfoHeader)
   // Setting size/info data and calculating hashes for page descriptors
   for(int64_t i = secInfoHeader->pageDescCount - 1; i >= 0; i--)
     {      
-      // REPLACE THIS IF-ELSE CHAIN WITH LOGIC TO DETERMINE PERMISSIONS FROM PE SECTIONS.
-      if(i < 10)
-	{
-	  secInfoHeader->descriptors[i].sizeAndInfo = 0x13;
-	}
-      else if(i < 62)
-	{
-	  secInfoHeader->descriptors[i].sizeAndInfo = 0x11;
-	}
-      else
-	{
-	  secInfoHeader->descriptors[i].sizeAndInfo = 0x12;
-	}
+      // Get page type (rwx)
+      secInfoHeader->descriptors[i].sizeAndInfo = getRwx(secInfoHeader, peData, i);
       
       // Init sha1 hash
       struct sha1_ctx shaContext;
@@ -69,4 +74,6 @@ void setPageDescriptors(FILE *pe, struct secInfoHeader *secInfoHeader)
 	  sha1_digest(&shaContext, 0x14, secInfoHeader->imageSha1);
 	}
     }
+
+  free(peData->sections.sectionPerms); // Alloc'd in getdata
 }

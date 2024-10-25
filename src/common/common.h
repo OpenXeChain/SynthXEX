@@ -33,5 +33,6 @@
 #define SUCCESS 0
 
 #define ERR_UNKNOWN_DATA_REQUEST -1;
+#define ERR_MISSING_SECTION_FLAG -2;
 
 void infoPrint(char *str);

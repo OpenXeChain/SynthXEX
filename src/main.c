@@ -118,6 +118,9 @@ int main(int argc, char **argv)
   FILE *pe = fopen(basefilePath, "r");
   FILE *xex = fopen(xexfilePath, "w+");
 
+  free(basefilePath);
+  free(xexfilePath);
+  
   struct offsets offsets;
   struct xexHeader xexHeader;
   struct secInfoHeader secInfoHeader;
@@ -142,7 +145,7 @@ int main(int argc, char **argv)
   // Setting final XEX data structs
   setXEXHeader(&xexHeader);
   setSecInfoHeader(&secInfoHeader, &peData, 0x2, 0x823DFC64); // TEMP IMPORT TABLE COUNT & EXPORT TABLE ADDR
-  setPageDescriptors(pe, &secInfoHeader);
+  setPageDescriptors(pe, &peData, &secInfoHeader);
 
   // Setting data positions...
   placeStructs(&offsets, &xexHeader, &secInfoHeader);
@@ -155,7 +158,7 @@ int main(int argc, char **argv)
       fclose(xex);
       return -1;
     }
-  
+
   fclose(pe);
   fclose(xex);
   return 0;
