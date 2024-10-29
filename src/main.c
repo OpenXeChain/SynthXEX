@@ -22,6 +22,7 @@
 #include "getdata/getdata.h"
 #include "setdata/populateheaders.h"
 #include "setdata/pagedescriptors.h"
+#include "setdata/optheaders.h"
 #include "placer/placer.h"
 #include "write/writexex.h"
 
@@ -125,6 +126,8 @@ int main(int argc, char **argv)
   struct xexHeader xexHeader;
   struct secInfoHeader secInfoHeader;
   struct peData peData;
+  struct optHeaderEntries optHeaderEntries;
+  struct optHeaders optHeaders;
 
   if(!validatePE(pe))
     {
@@ -146,12 +149,13 @@ int main(int argc, char **argv)
   setXEXHeader(&xexHeader);
   setSecInfoHeader(&secInfoHeader, &peData, 0x2, 0x823DFC64); // TEMP IMPORT TABLE COUNT & EXPORT TABLE ADDR
   setPageDescriptors(pe, &peData, &secInfoHeader);
-
+  setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+  
   // Setting data positions...
-  placeStructs(&offsets, &xexHeader, &secInfoHeader);
+  placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
   
   // Finally, write out all of the XEX data to file
-  if(writeXEX(&xexHeader, &secInfoHeader, &offsets, xex) != 0)
+  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, xex) != 0)
     {
       infoPrint("ERROR: Unknown error in XEX write routine. Aborting.");
       fclose(pe);

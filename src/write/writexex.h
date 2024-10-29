@@ -21,4 +21,4 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-int writeXEX(struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader, struct offsets *offsets, FILE *xex);
+int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders, struct offsets *offsets, FILE *xex);

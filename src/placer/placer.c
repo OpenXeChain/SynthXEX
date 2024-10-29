@@ -28,20 +28,58 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
   return offset; // Offset already aligned
 }
 
+void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset)
+{
+  offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t)); // Calloc because 0 values will be used to determine if a header is not present.
+  uint32_t sepHeader = 0; // Separate header iterator, i.e. one with it's data outwith the entries
+  
+  for(uint32_t i = 0; i < optHeaderEntries->count; i++)
+    {
+      *currentOffset = getNextAligned(*currentOffset, 0x8);
+      offsets->optHeaders[sepHeader] = *currentOffset;
+      optHeaderEntries->optHeaderEntry[sepHeader].dataOrOffset = *currentOffset;
+      
+      switch(optHeaderEntries->optHeaderEntry[i].id)
+	{
+	case XEX_OPT_ID_BASEFILE_FORMAT:
+	  *currentOffset += sizeof(struct basefileFormat);
+	  sepHeader++;
+	  break;
+
+	case XEX_OPT_ID_IMPORT_LIBS:
+	  *currentOffset += sizeof(struct importLibraries);
+	  sepHeader++;
+	  break;
+
+	case XEX_OPT_ID_TLS_INFO:
+	  *currentOffset += sizeof(struct tlsInfo);
+	  sepHeader++;
+	  break;
+	}
+    }
+}
+
 // Todo in future: implement a dynamic optional header selection mechanism instead of hard-coding the basic 5
-void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader)
+void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders)
 {
   // XEX Header
   uint32_t currentOffset = 0x0;
   offsets->xexHeader = currentOffset;
   currentOffset += sizeof(struct xexHeader);
 
+  // Optional header entries (no alignment, they immediately follow XEX header)
+  offsets->optHeaderEntries = currentOffset;
+  currentOffset += optHeaderEntries->count * sizeof(struct optHeaderEntry);
+  
   // Security header
   currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers etc
   offsets->secInfoHeader = currentOffset;
   xexHeader->secInfoOffset = currentOffset;
   currentOffset += (sizeof(struct secInfoHeader) - sizeof(void*)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
 
+  // Optional headers
+  setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset);
+  
   // PE basefile
   currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
   offsets->basefile = currentOffset;

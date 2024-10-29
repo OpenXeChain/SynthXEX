@@ -40,6 +40,13 @@
 // Region flags
 #define XEX_REG_FLAG_REGION_FREE 0xFFFFFFFF
 
+// Optional header IDs
+#define XEX_OPT_ID_BASEFILE_FORMAT 0x003FF
+#define XEX_OPT_ID_ENTRYPOINT      0x10100
+#define XEX_OPT_ID_IMPORT_LIBS     0x103FF
+#define XEX_OPT_ID_TLS_INFO        0x20104
+#define XEX_OPT_ID_SYS_FLAGS       0x30000
+
 // System flags  
 #define XEX_SYS_GAMEPAD_DISCONNECT 0x00000020
 #define XEX_SYS_INSECURE_SOCKETS   0x00000040
@@ -87,6 +94,7 @@ struct peData
 struct offsets
 {
   uint32_t xexHeader;
+  uint32_t optHeaderEntries;
   uint32_t secInfoHeader;
   uint32_t *optHeaders;
   uint32_t basefile;
@@ -131,22 +139,18 @@ struct __attribute__((packed)) secInfoHeader
   struct pageDescriptor *descriptors;
 };
 
-struct __attribute__((packed)) optHeaderEntry
-{
-  uint32_t id;
-  uint32_t dataOrOffset;
-};
-
 struct __attribute__((packed)) basefileFormat
 {
   uint32_t size;
   uint16_t encType;
   uint16_t compType;
+  uint32_t dataSize;
+  uint32_t zeroSize;
 };
 
 struct __attribute__((packed)) importLibraries
 {
-  uint8_t *temp;
+  uint8_t temp;
 };
 
 struct __attribute__((packed)) tlsInfo
@@ -155,4 +159,23 @@ struct __attribute__((packed)) tlsInfo
   uint32_t rawDataAddr;
   uint32_t dataSize;
   uint32_t rawDataSize;
+};
+
+struct optHeaderEntries
+{
+  uint32_t count;
+  struct optHeaderEntry *optHeaderEntry;
+};
+
+struct __attribute__((packed)) optHeaderEntry
+{
+  uint32_t id;
+  uint32_t dataOrOffset;
+};
+
+struct optHeaders
+{
+  struct basefileFormat basefileFormat;
+  struct importLibraries importLibraries;
+  struct tlsInfo tlsInfo;
 };

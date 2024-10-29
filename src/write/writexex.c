@@ -19,7 +19,7 @@
 #include "writexex.h"
 
 // TEMPORARY WRITE TESTING
-int writeXEX(struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader, struct offsets *offsets, FILE *xex)
+int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders, struct offsets *offsets, FILE *xex)
 {
   // XEX Header
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -29,10 +29,27 @@ int writeXEX(struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader, s
   xexHeader->secInfoOffset = htonl(xexHeader->secInfoOffset);
   xexHeader->optHeaderCount = htonl(xexHeader->optHeaderCount);
 #endif
-
+  
   fseek(xex, offsets->xexHeader, SEEK_SET);
   fwrite(xexHeader, sizeof(uint8_t), sizeof(struct xexHeader), xex);
 
+  // Optional header entries
+#ifdef LITTLE_ENDIAN_SYSTEM
+  // Endian swap opt header entries
+  for(uint32_t i = 0; i < optHeaderEntries->count; i++)
+    {
+      optHeaderEntries->optHeaderEntry[i].id = htonl(optHeaderEntries->optHeaderEntry[i].id);
+      optHeaderEntries->optHeaderEntry[i].dataOrOffset = htonl(optHeaderEntries->optHeaderEntry[i].dataOrOffset);
+    }
+#endif
+
+  fseek(xex, offsets->optHeaderEntries, SEEK_SET);
+
+  for(int i = 0; i < optHeaderEntries->count; i++)
+    {
+      fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex);
+    }
+  
   // Security Info
   // Get page descriptor count before endian-swapping (we need it for page descriptors)
   int pageDescCount = secInfoHeader->pageDescCount; // Maybe re-order write order so this isn't necessary?
@@ -67,6 +84,45 @@ int writeXEX(struct xexHeader *xexHeader, struct secInfoHeader *secInfoHeader, s
     }
 
   free(secInfoHeader->descriptors); // calloc'd elsewhere, freeing now
+
+  // Optional headers
+  uint32_t currentHeader = 0;
   
+  if(optHeaders->basefileFormat.size != 0) // If not 0, it has data. Write it.
+    {
+      fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
+
+#ifdef LITTLE_ENDIAN_SYSTEM
+      optHeaders->basefileFormat.size = htonl(optHeaders->basefileFormat.size);
+      optHeaders->basefileFormat.encType = htons(optHeaders->basefileFormat.encType);
+      optHeaders->basefileFormat.compType = htons(optHeaders->basefileFormat.compType);
+      optHeaders->basefileFormat.dataSize = htonl(optHeaders->basefileFormat.dataSize);
+      optHeaders->basefileFormat.zeroSize = htonl(optHeaders->basefileFormat.zeroSize);
+#endif
+      
+      fwrite(&(optHeaders->basefileFormat), sizeof(uint8_t), sizeof(struct basefileFormat), xex);
+      currentHeader++;
+    }
+
+  if(optHeaders->importLibraries.temp != 0)
+    {
+      fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
+      currentHeader++; // Skipping, don't know how to create yet...
+    }
+
+  if(optHeaders->tlsInfo.slotCount != 0)
+    {
+      fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
+
+#ifdef LITTLE_ENDIAN_SYSTEM
+      optHeaders->tlsInfo.slotCount = htonl(optHeaders->tlsInfo.slotCount);
+      optHeaders->tlsInfo.rawDataAddr = htonl(optHeaders->tlsInfo.rawDataAddr);
+      optHeaders->tlsInfo.dataSize = htonl(optHeaders->tlsInfo.dataSize);
+      optHeaders->tlsInfo.rawDataSize = htonl(optHeaders->tlsInfo.rawDataSize);
+#endif
+
+      fwrite(&(optHeaders->tlsInfo), sizeof(uint8_t), sizeof(struct tlsInfo), xex);
+    }
+    
   return SUCCESS;
 }
