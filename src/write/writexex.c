@@ -49,6 +49,8 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     {
       fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex);
     }
+
+  free(optHeaderEntries->optHeaderEntry); // Alloc'd in setdata (optheaders). Now we're done with it.
   
   // Security Info
   // Get page descriptor count before endian-swapping (we need it for page descriptors)
@@ -123,6 +125,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
       fwrite(&(optHeaders->tlsInfo), sizeof(uint8_t), sizeof(struct tlsInfo), xex);
     }
-    
+  
+  free(offsets->optHeaders); // Alloc'd in placer.
   return SUCCESS;
 }
