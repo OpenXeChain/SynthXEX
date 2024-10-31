@@ -19,7 +19,7 @@
 #include "writexex.h"
 
 // TEMPORARY WRITE TESTING
-int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders, struct offsets *offsets, FILE *xex)
+int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders, struct offsets *offsets, FILE *pe, FILE *xex)
 {
   // XEX Header
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -68,6 +68,21 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
   free(secInfoHeader->descriptors); // calloc'd elsewhere, freeing now
 
+  // Basefile
+  fseek(pe, 0x0, SEEK_SET);
+  fseek(xex, offsets->basefile, SEEK_SET);
+  
+  uint16_t readBufSize = 0x1000; // Reading in 4KiB at a time to avoid excessive memory usage
+  uint8_t *buffer = malloc(readBufSize * sizeof(uint8_t));
+
+  for(uint32_t i = 0; i < secInfoHeader->peSize; i += readBufSize)
+    {
+      fread(buffer, sizeof(uint8_t), readBufSize, pe);
+      fwrite(buffer, sizeof(uint8_t), readBufSize, xex);
+    }
+
+  free(buffer);
+  
   // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
   // Endian-swap secinfo header

@@ -155,7 +155,7 @@ int main(int argc, char **argv)
   placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
   
   // Finally, write out all of the XEX data to file
-  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, xex) != 0)
+  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, pe, xex) != 0)
     {
       infoPrint("ERROR: Unknown error in XEX write routine. Aborting.");
       fclose(pe);
