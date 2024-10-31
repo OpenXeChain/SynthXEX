@@ -52,10 +52,23 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
   free(optHeaderEntries->optHeaderEntry); // Alloc'd in setdata (optheaders). Now we're done with it.
   
-  // Security Info
-  // Get page descriptor count before endian-swapping (we need it for page descriptors)
-  int pageDescCount = secInfoHeader->pageDescCount; // Maybe re-order write order so this isn't necessary?
+  // Page descriptors
+  fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void*), SEEK_SET);
   
+  for(int i = 0; i < secInfoHeader->pageDescCount; i++)
+    {
+#ifdef LITTLE_ENDIAN_SYSTEM
+      secInfoHeader->descriptors[i].sizeAndInfo = htonl(secInfoHeader->descriptors[i].sizeAndInfo);
+#endif
+      
+      // Writing out current descriptor...
+      fwrite(&(secInfoHeader->descriptors[i].sizeAndInfo), sizeof(uint32_t), 0x1, xex);
+      fwrite(secInfoHeader->descriptors[i].sha1, sizeof(uint8_t), 0x14, xex);
+    }
+
+  free(secInfoHeader->descriptors); // calloc'd elsewhere, freeing now
+
+  // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
   // Endian-swap secinfo header
   secInfoHeader->headerSize = htonl(secInfoHeader->headerSize);
@@ -72,21 +85,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
   fseek(xex, offsets->secInfoHeader, SEEK_SET);
   fwrite(secInfoHeader, sizeof(uint8_t), sizeof(struct secInfoHeader) - sizeof(void*), xex); // sizeof(void*) == size of page descriptor pointer at end
-
-  // Page descriptors
-  for(int i = 0; i < pageDescCount; i++)
-    {
-#ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = htonl(secInfoHeader->descriptors[i].sizeAndInfo);
-#endif
-      
-      // Writing out current descriptor...
-      fwrite(&(secInfoHeader->descriptors[i].sizeAndInfo), sizeof(uint32_t), 0x1, xex);
-      fwrite(secInfoHeader->descriptors[i].sha1, sizeof(uint8_t), 0x14, xex);
-    }
-
-  free(secInfoHeader->descriptors); // calloc'd elsewhere, freeing now
-
+  
   // Optional headers
   uint32_t currentHeader = 0;
   

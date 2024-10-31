@@ -31,7 +31,7 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
 	}
     }
 
-  return XEX_SECTION_RODATA; // We're in the PE header, so RODATA
+  return XEX_SECTION_RODATA | 0b10000; // We're in the PE header, so RODATA
 }
 
 void setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
