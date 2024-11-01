@@ -25,6 +25,7 @@
 #include "setdata/optheaders.h"
 #include "placer/placer.h"
 #include "write/writexex.h"
+#include "write/headerhash.h"
 
 void dispVer()
 {
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
   // Setting data positions...
   placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
   
-  // Finally, write out all of the XEX data to file
+  // Write out all of the XEX data to file
   if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, pe, xex) != 0)
     {
       infoPrint("ERROR: Unknown error in XEX write routine. Aborting.");
@@ -162,6 +163,9 @@ int main(int argc, char **argv)
       fclose(xex);
       return -1;
     }
+
+  // Final pass (sets & writes header hash)
+  setHeaderSha1(xex);
 
   fclose(pe);
   fclose(xex);
