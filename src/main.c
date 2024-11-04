@@ -146,9 +146,25 @@ int main(int argc, char **argv)
       return -1;
     }
 
+  // TEMPORARY: READ IN IMPORT HEADER DATA
+  FILE *importData = fopen("./import.bin", "r");
+
+  struct stat importStat;
+  fstat(fileno(importData), &importStat);
+  uint32_t importLen = importStat.st_size;
+
+  fread(&(optHeaders.importLibraries.size), sizeof(uint8_t), 4, importData);
+
+#ifdef LITTLE_ENDIAN_SYSTEM
+  optHeaders.importLibraries.size = ntohl(optHeaders.importLibraries.size);
+#endif
+  
+  optHeaders.importLibraries.data = malloc(importLen - 0x4 * sizeof(uint8_t));
+  fread(optHeaders.importLibraries.data, sizeof(uint8_t), importLen - 0x4, importData);
+  
   // Setting final XEX data structs
   setXEXHeader(&xexHeader);
-  setSecInfoHeader(&secInfoHeader, &peData, 0x2, 0x823DFC64); // TEMP IMPORT TABLE COUNT & EXPORT TABLE ADDR
+  setSecInfoHeader(&secInfoHeader, &peData, 0x823DFC64); // TEMP EXPORT TABLE ADDR
   setPageDescriptors(pe, &peData, &secInfoHeader);
   setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
   
@@ -164,9 +180,14 @@ int main(int argc, char **argv)
       return -1;
     }
 
+  free(optHeaders.importLibraries.data);
+
   // Final pass (sets & writes header hash)
   setHeaderSha1(xex);
 
+  // TEMPORARY: Hashing will be moved to earlier on when imports are implemented
+  setImportsSha1(xex);
+  
   fclose(pe);
   fclose(xex);
   return 0;

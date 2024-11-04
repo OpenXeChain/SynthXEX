@@ -26,7 +26,7 @@ void setXEXHeader(struct xexHeader *xexHeader)
   xexHeader->optHeaderCount = 0x5; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
 }
 
-void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t TEMPIMPORTCOUNT, uint32_t TEMPEXPORTADDR)
+void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t TEMPEXPORTADDR)
 {
   // Getting page size, if base address is >= 0x90000000 4KiB pages are used, else 64KiB.
   bool smallPages = peData->baseAddr < 0x90000000 ? false : true;
@@ -41,7 +41,6 @@ void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData
   secInfoHeader->imageInfoSize = 0x174; // Image info size is always 0x174
   secInfoHeader->imageFlags = (smallPages ? XEX_IMG_FLAG_4KIB_PAGES : 0) | XEX_IMG_FLAG_REGION_FREE; // If page size is 4KiB (small pages), set that flag
   secInfoHeader->baseAddr = peData->baseAddr;
-  secInfoHeader->importTableCount = TEMPIMPORTCOUNT;
   memset(secInfoHeader->mediaID, 0, sizeof(secInfoHeader->mediaID)); // Null media ID
   memset(secInfoHeader->aesKey, 0, sizeof(secInfoHeader->aesKey)); // No encryption, null AES key
   secInfoHeader->exportTableAddr = TEMPEXPORTADDR;

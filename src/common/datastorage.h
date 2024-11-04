@@ -150,7 +150,8 @@ struct __attribute__((packed)) basefileFormat
 
 struct __attribute__((packed)) importLibraries
 {
-  uint8_t temp;
+  uint32_t size;
+  uint8_t *data;
 };
 
 struct __attribute__((packed)) tlsInfo

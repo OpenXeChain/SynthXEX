@@ -120,10 +120,18 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       currentHeader++;
     }
 
-  if(optHeaders->importLibraries.temp != 0)
+  if(optHeaders->importLibraries.size != 0)
     {
       fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
-      currentHeader++; // Skipping, don't know how to create yet...
+      uint32_t importLibsSize = optHeaders->importLibraries.size; // Need to use this value, so save it before we endian-swap
+      
+#ifdef LITTLE_ENDIAN_SYSTEM
+      optHeaders->importLibraries.size = htonl(optHeaders->importLibraries.size);
+#endif
+
+      fwrite(&(optHeaders->importLibraries.size), sizeof(uint8_t), 0x4, xex);
+      fwrite(optHeaders->importLibraries.data, sizeof(uint8_t), importLibsSize - 0x4, xex);
+      currentHeader++;
     }
 
   if(optHeaders->tlsInfo.slotCount != 0)

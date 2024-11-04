@@ -18,6 +18,13 @@
 
 #include "placer.h"
 
+// Internal struct, defined here so it cannot be accessed outwith this file
+struct importLibIdcs
+{
+  uint32_t header;
+  uint32_t entry;
+};
+
 uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
 {
   if(offset % alignment) // If offset not aligned
@@ -28,7 +35,7 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
   return offset; // Offset already aligned
 }
 
-void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset)
+void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset, struct importLibIdcs *importLibIdcs)
 {
   offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t)); // Calloc because 0 values will be used to determine if a header is not present.
   uint32_t sepHeader = 0; // Separate header iterator, i.e. one with it's data outwith the entries
@@ -47,8 +54,8 @@ void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHe
 	  break;
 
 	case XEX_OPT_ID_IMPORT_LIBS:
-	  *currentOffset += sizeof(struct importLibraries);
-	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
+	  importLibIdcs->header = sepHeader;
+	  importLibIdcs->entry = i;
 	  sepHeader++;
 	  break;
 
@@ -79,11 +86,18 @@ void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct o
   xexHeader->secInfoOffset = currentOffset;
   currentOffset += (sizeof(struct secInfoHeader) - sizeof(void*)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
 
-  // Optional headers
-  setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset);
+  // Optional headers (minus imports)
+  struct importLibIdcs importLibIdcs;
+  uint32_t importLibsIdx; // Entry in opt header entries of import libs
+  setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
+  currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
   
   // PE basefile
   currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
   offsets->basefile = currentOffset;
   xexHeader->peOffset = currentOffset;
+
+  // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
+  offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+  optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
 }
