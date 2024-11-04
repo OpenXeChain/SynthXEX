@@ -43,13 +43,13 @@ void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHe
   for(uint32_t i = 0; i < optHeaderEntries->count; i++)
     {
       *currentOffset = getNextAligned(*currentOffset, 0x8);
-      offsets->optHeaders[sepHeader] = *currentOffset;
-      
+         
       switch(optHeaderEntries->optHeaderEntry[i].id)
 	{
 	case XEX_OPT_ID_BASEFILE_FORMAT:
 	  *currentOffset += sizeof(struct basefileFormat);
 	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
+	  offsets->optHeaders[sepHeader] = *currentOffset;
 	  sepHeader++;
 	  break;
 
@@ -62,6 +62,7 @@ void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHe
 	case XEX_OPT_ID_TLS_INFO:
 	  *currentOffset += sizeof(struct tlsInfo);
 	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
+	  offsets->optHeaders[sepHeader] = *currentOffset;
 	  sepHeader++;
 	  break;
 	}
