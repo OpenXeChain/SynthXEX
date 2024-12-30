@@ -29,6 +29,9 @@
 #define COPYRIGHT "2024"
 #define VERSION_STRING "SynthXEX v0.0.1"
 
+// Print constants
+#define PRINT_STEM "SynthXEX>"
+
 // Return values
 #define SUCCESS 0
 

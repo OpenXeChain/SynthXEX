@@ -49,7 +49,7 @@ void setSysFlags(uint32_t *flags)
 void setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders)
 {
   // TODO: Dynamically select optional headers to use, instead of hard-coding
-  optHeaderEntries->count = 5;
+  optHeaderEntries->count = 4;
   optHeaderEntries->optHeaderEntry = calloc(5, sizeof(struct optHeaderEntry));
 
   // First optional header (basefile format)
@@ -61,13 +61,13 @@ void setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, s
   optHeaderEntries->optHeaderEntry[1].dataOrOffset = secInfoHeader->baseAddr + peData->entryPoint;
 
   // Third optional header (import libs)
-  optHeaderEntries->optHeaderEntry[2].id = XEX_OPT_ID_IMPORT_LIBS;
+  //optHeaderEntries->optHeaderEntry[2].id = XEX_OPT_ID_IMPORT_LIBS;
 
   // Fourth optional header (tls info)
-  optHeaderEntries->optHeaderEntry[3].id = XEX_OPT_ID_TLS_INFO;
+  optHeaderEntries->optHeaderEntry[2].id = XEX_OPT_ID_TLS_INFO;
   setTLSInfo(&(optHeaders->tlsInfo));
 
   // Fifth optional header (system flags)
-  optHeaderEntries->optHeaderEntry[4].id = XEX_OPT_ID_SYS_FLAGS;
-  setSysFlags(&(optHeaderEntries->optHeaderEntry[4].dataOrOffset));
+  optHeaderEntries->optHeaderEntry[3].id = XEX_OPT_ID_SYS_FLAGS;
+  setSysFlags(&(optHeaderEntries->optHeaderEntry[3].dataOrOffset));
 }

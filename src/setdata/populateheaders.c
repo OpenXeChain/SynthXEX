@@ -23,10 +23,10 @@ void setXEXHeader(struct xexHeader *xexHeader)
   // Writing data into XEX header.
   strcpy(xexHeader->magic, "XEX2"); // Magic
   xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE; // Hard-coding until more options supported
-  xexHeader->optHeaderCount = 0x5; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
+  xexHeader->optHeaderCount = 0x4; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
 }
 
-void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t TEMPEXPORTADDR)
+void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
 {
   // Getting page size, if base address is >= 0x90000000 4KiB pages are used, else 64KiB.
   bool smallPages = peData->baseAddr < 0x90000000 ? false : true;
@@ -43,7 +43,8 @@ void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData
   secInfoHeader->baseAddr = peData->baseAddr;
   memset(secInfoHeader->mediaID, 0, sizeof(secInfoHeader->mediaID)); // Null media ID
   memset(secInfoHeader->aesKey, 0, sizeof(secInfoHeader->aesKey)); // No encryption, null AES key
-  secInfoHeader->exportTableAddr = TEMPEXPORTADDR;
+  //secInfoHeader->exportTableAddr = TEMPEXPORTADDR;
+  secInfoHeader->exportTableAddr = 0;
   secInfoHeader->gameRegion = XEX_REG_FLAG_REGION_FREE;
   secInfoHeader->mediaTypes = 0xFFFFFFFF; // All flags set, can load from any type.
   secInfoHeader->pageDescCount = secInfoHeader->peSize / ((smallPages ? 4 : 64) * 1024); // Number of page descriptors following security info (same number of pages)

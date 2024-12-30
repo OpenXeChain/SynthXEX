@@ -91,7 +91,7 @@ void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct o
   struct importLibIdcs importLibIdcs;
   uint32_t importLibsIdx; // Entry in opt header entries of import libs
   setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
-  currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
+  //currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
   
   // PE basefile
   currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
@@ -99,6 +99,6 @@ void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct o
   xexHeader->peOffset = currentOffset;
 
   // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-  offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
-  optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+  //offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+  //optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
 }

@@ -22,4 +22,4 @@
 #include "../common/datastorage.h"
 
 void setXEXHeader(struct xexHeader *xexHeader);
-void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t TEMPEXPORTADDR);
+void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData);

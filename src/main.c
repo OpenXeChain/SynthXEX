@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	  free(xexfilePath);
 	}
       
-      infoPrint("ERROR: Basefile input expected but not found. Aborting.");
+      printf("%s ERROR: Basefile input expected but not found. Aborting.", PRINT_STEM);
       return -1;
     }
   else if(!gotOutput)
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	  free(basefilePath);
 	}
       
-      infoPrint("ERROR: Xexfile output expected but not found. Aborting.");
+      printf("%s ERROR: Xexfile output expected but not found. Aborting.", PRINT_STEM);
       return -1;
     }
 
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 
   if(!validatePE(pe))
     {
-      infoPrint("ERROR: Basefile is not Xbox 360 PE. Aborting.");
+      printf("%s ERROR: Basefile is not Xbox 360 PE. Aborting.", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -140,31 +140,31 @@ int main(int argc, char **argv)
   
   if(getHdrData(pe, &peData, 0) != 0)
     {
-      infoPrint("ERROR: Unknown error in data retrieval from basefile. Aborting.");
+      printf("%s ERROR: Unknown error in data retrieval from basefile. Aborting.", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
     }
 
   // TEMPORARY: READ IN IMPORT HEADER DATA
-  FILE *importData = fopen("./import.bin", "r");
-
-  struct stat importStat;
-  fstat(fileno(importData), &importStat);
-  uint32_t importLen = importStat.st_size;
-
-  fread(&(optHeaders.importLibraries.size), sizeof(uint8_t), 4, importData);
-
-#ifdef LITTLE_ENDIAN_SYSTEM
-  optHeaders.importLibraries.size = ntohl(optHeaders.importLibraries.size);
-#endif
+//  FILE *importData = fopen("./import.bin", "r");
+//
+//  struct stat importStat;
+//  fstat(fileno(importData), &importStat);
+//  uint32_t importLen = importStat.st_size;
+//
+//  fread(&(optHeaders.importLibraries.size), sizeof(uint8_t), 4, importData);
+//
+//#ifdef LITTLE_ENDIAN_SYSTEM
+//  optHeaders.importLibraries.size = ntohl(optHeaders.importLibraries.size);
+//#endif
   
-  optHeaders.importLibraries.data = malloc(importLen - 0x4 * sizeof(uint8_t));
-  fread(optHeaders.importLibraries.data, sizeof(uint8_t), importLen - 0x4, importData);
+  //optHeaders.importLibraries.data = malloc(importLen - 0x4 * sizeof(uint8_t));
+  //fread(optHeaders.importLibraries.data, sizeof(uint8_t), importLen - 0x4, importData);
   
   // Setting final XEX data structs
   setXEXHeader(&xexHeader);
-  setSecInfoHeader(&secInfoHeader, &peData, 0x823DFC64); // TEMP EXPORT TABLE ADDR
+  setSecInfoHeader(&secInfoHeader, &peData);
   setPageDescriptors(pe, &peData, &secInfoHeader);
   setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
   
@@ -174,19 +174,19 @@ int main(int argc, char **argv)
   // Write out all of the XEX data to file
   if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, pe, xex) != 0)
     {
-      infoPrint("ERROR: Unknown error in XEX write routine. Aborting.");
+      printf("%s ERROR: Unknown error in XEX write routine. Aborting.", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
     }
 
-  free(optHeaders.importLibraries.data);
+  //free(optHeaders.importLibraries.data);
 
   // Final pass (sets & writes header hash)
   setHeaderSha1(xex);
 
   // TEMPORARY: Hashing will be moved to earlier on when imports are implemented
-  setImportsSha1(xex);
+  //setImportsSha1(xex);
   
   fclose(pe);
   fclose(xex);
