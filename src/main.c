@@ -46,8 +46,8 @@ void dispHelp(char **argv)
   printf("Options:\n");
   printf("-h,\t--help,\t\tShow this information\n");
   printf("-v,\t--version,\tShow version and copyright information\n");
-  printf("-i,\t--input,\tSpecify input basefile path\n");
-  printf("-o,\t--output,\tSpecify output xexfile path\n\n");
+  printf("-i,\t--input,\tSpecify input PE file path\n");
+  printf("-o,\t--output,\tSpecify output XEX file path\n\n");
 }
 
 int main(int argc, char **argv)
@@ -94,6 +94,10 @@ int main(int argc, char **argv)
 	}
     }
 
+  printf("%s This is SynthXEX, %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION, COPYRIGHT);
+  printf("%s This program is free/libre software. Run \"%s --version\" for license info.\n\n", PRINT_STEM, argv[0]);
+
+  
   // Check we got everything we need
   if(!gotInput)
     {
@@ -102,7 +106,7 @@ int main(int argc, char **argv)
 	  free(xexfilePath);
 	}
       
-      printf("%s ERROR: Basefile input expected but not found. Aborting.", PRINT_STEM);
+      printf("%s ERROR: PE input expected but not found. Aborting.\n", PRINT_STEM);
       return -1;
     }
   else if(!gotOutput)
@@ -111,8 +115,8 @@ int main(int argc, char **argv)
 	{
 	  free(basefilePath);
 	}
-      
-      printf("%s ERROR: Xexfile output expected but not found. Aborting.", PRINT_STEM);
+
+      printf("%s ERROR: XEX file output expected but not found. Aborting.\n", PRINT_STEM);
       return -1;
     }
 
@@ -122,7 +126,7 @@ int main(int argc, char **argv)
 
   free(basefilePath);
   free(xexfilePath);
-  
+
   struct offsets offsets;
   struct xexHeader xexHeader;
   struct secInfoHeader secInfoHeader;
@@ -130,21 +134,33 @@ int main(int argc, char **argv)
   struct optHeaderEntries optHeaderEntries;
   struct optHeaders optHeaders;
 
+  printf("%s Validating PE file...\n", PRINT_STEM);
+  
   if(!validatePE(pe))
     {
-      printf("%s ERROR: Basefile is not Xbox 360 PE. Aborting.", PRINT_STEM);
+      printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
     }
+
+  printf("%s PE valid!\n", PRINT_STEM);
+
+  // TODO: insert functionality HERE to create the basefile from input PE file.
+  // It needs to be loaded into memory as if we are going to execute it (don't need to populate IAT etc though), then written out to file.
+  // Then we can switch the loaded PE file out for the basefile and continue without changing any more code.
   
+  printf("%s Retrieving header data from basefile...\n", PRINT_STEM);
+
   if(getHdrData(pe, &peData, 0) != 0)
     {
-      printf("%s ERROR: Unknown error in data retrieval from basefile. Aborting.", PRINT_STEM);
+      printf("%s ERROR: Unknown error in data retrieval from basefile. Aborting.\n", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
     }
+
+  printf("%s Got header data from basefile!\n", PRINT_STEM);
 
   // TEMPORARY: READ IN IMPORT HEADER DATA
 //  FILE *importData = fopen("./import.bin", "r");
@@ -163,32 +179,45 @@ int main(int argc, char **argv)
   //fread(optHeaders.importLibraries.data, sizeof(uint8_t), importLen - 0x4, importData);
   
   // Setting final XEX data structs
+  printf("%s Building XEX header...\n", PRINT_STEM);
   setXEXHeader(&xexHeader);
+  printf("%s Building security header...\n", PRINT_STEM);
   setSecInfoHeader(&secInfoHeader, &peData);
+  printf("%s Setting page descriptors...\n", PRINT_STEM);
   setPageDescriptors(pe, &peData, &secInfoHeader);
+  printf("%s Building optional headers...\n", PRINT_STEM);
   setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
   
   // Setting data positions...
+  printf("%s Aligning data...\n", PRINT_STEM);
   placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
   
   // Write out all of the XEX data to file
+  printf("%s Writing data to XEX file...\n", PRINT_STEM);
+  
   if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, pe, xex) != 0)
     {
-      printf("%s ERROR: Unknown error in XEX write routine. Aborting.", PRINT_STEM);
+      printf("%s ERROR: Unknown error in XEX write routine. Aborting.\n", PRINT_STEM);
       fclose(pe);
       fclose(xex);
       return -1;
     }
 
+  printf("%s Main data written to XEX file!\n", PRINT_STEM);
+  
   //free(optHeaders.importLibraries.data);
 
   // Final pass (sets & writes header hash)
+  printf("%s Calculating and writing header SHA1...\n", PRINT_STEM);
   setHeaderSha1(xex);
+  printf("%s Header SHA1 written!\n", PRINT_STEM);
 
   // TEMPORARY: Hashing will be moved to earlier on when imports are implemented
   //setImportsSha1(xex);
   
   fclose(pe);
   fclose(xex);
+  
+  printf("%s XEX built. Have a nice day!\n\n", PRINT_STEM);
   return 0;
 }
