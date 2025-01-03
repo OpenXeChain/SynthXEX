@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,46 +17,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "getdata.h"
-
-uint32_t get32BitFromPE(FILE *pe)
-{
-  uint8_t store[4];
-  fread(store, sizeof(uint8_t), 4, pe);
-  
-  uint32_t result = 0;
-
-  for(int i = 0; i < 4; i++)
-    {
-      result |= store[i] << i * 8;
-    }
-
-  // If system is big endian, swap endianness (PE is LE)
-#ifdef BIG_ENDIAN_SYSTEM
-  result = htonl(result);
-#endif
-  
-  return result;
-}
-
-uint32_t get16BitFromPE(FILE *pe)
-{
-  uint8_t store[2];
-  fread(store, sizeof(uint8_t), 2, pe);
-  
-  uint16_t result = 0;
-
-  for(int i = 0; i < 2; i++)
-    {
-      result |= store[i] << i * 8;
-    }
-
-  // If system is big endian, swap endianness (PE is LE)
-#ifdef BIG_ENDIAN_SYSTEM
-  result = htons(result);
-#endif
-  
-  return result;
-}
 
 // Validate PE. This isn't thorough, but it's enough to catch any non-PE/360 files
 bool validatePE(FILE *pe) // True if valid, else false 
@@ -120,10 +80,10 @@ int getSectionRwxFlags(FILE *pe, struct sections *sections)
 
   for(uint16_t i = 0; i < sections->count; i++)
     {
-      fseek(pe, 0x14, SEEK_CUR); // Seek to raw offset of section
-      sections->sectionPerms[i].rawOffset = get32BitFromPE(pe);
+      fseek(pe, 0xC, SEEK_CUR); // Seek to RVA of section
+      sections->sectionPerms[i].rva = get32BitFromPE(pe);
 
-      fseek(pe, 0xC, SEEK_CUR); // Now progress to characteristics, where we will check flags
+      fseek(pe, 0x14, SEEK_CUR); // Now progress to characteristics, where we will check flags
       uint32_t characteristics = get32BitFromPE(pe);
 
       if(characteristics & PE_SECTION_FLAG_EXECUTE)
@@ -153,6 +113,7 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
 {
   // Get header data required for ANY XEX
   // PE size
+  fseek(pe, 0, SEEK_SET); // If we don't do this, the size returned is wrong (?)
   struct stat peStat;
   fstat(fileno(pe), &peStat);
   peData->size = peStat.st_size;

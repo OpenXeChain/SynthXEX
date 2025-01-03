@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2025 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -18,25 +18,7 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdbool.h>
+#include "../common/common.h"
+#include "../common/datastorage.h"
 
-// Program identifiers
-#define VERSION "v0.0.1"
-#define COPYRIGHT "2024"
-#define VERSION_STRING "SynthXEX v0.0.1"
-
-// Print constants
-#define PRINT_STEM "SynthXEX>"
-
-// Return values
-#define SUCCESS 0
-
-#define ERR_UNKNOWN_DATA_REQUEST -1;
-#define ERR_MISSING_SECTION_FLAG -2;
-#define ERR_FILE_OPEN -3;
-
-void infoPrint(char *str);
+int mapPEToBasefile(FILE *pe, FILE *basefile);

@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include "common/common.h"
 #include "common/datastorage.h"
+#include "pemapper/pemapper.h"
 #include "getdata/getdata.h"
 #include "setdata/populateheaders.h"
 #include "setdata/pagedescriptors.h"
@@ -66,7 +67,9 @@ int main(int argc, char **argv)
 
   bool gotInput = false;
   bool gotOutput = false;
-  char *basefilePath, *xexfilePath;
+
+  char *pePath;
+  char *xexfilePath;
   
   while((option = getopt_long_only(argc, argv, "hvi:o:", longOptions, &optIndex)) != -1)
     {      
@@ -83,8 +86,8 @@ int main(int argc, char **argv)
       else if(option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
 	{
 	  gotInput = true;
-	  basefilePath = malloc(strlen(optarg) + 1);
-	  strncpy(basefilePath, optarg, strlen(optarg) + 1);
+	  pePath = malloc(strlen(optarg) + 1);
+	  strncpy(pePath, optarg, strlen(optarg) + 1);
 	}
       else if(option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
 	{
@@ -96,7 +99,6 @@ int main(int argc, char **argv)
 
   printf("%s This is SynthXEX, %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION, COPYRIGHT);
   printf("%s This program is free/libre software. Run \"%s --version\" for license info.\n\n", PRINT_STEM, argv[0]);
-
   
   // Check we got everything we need
   if(!gotInput)
@@ -113,7 +115,7 @@ int main(int argc, char **argv)
     {
       if(gotInput)
 	{
-	  free(basefilePath);
+	  free(pePath);
 	}
 
       printf("%s ERROR: XEX file output expected but not found. Aborting.\n", PRINT_STEM);
@@ -121,12 +123,15 @@ int main(int argc, char **argv)
     }
 
   // Opening the files now that they've been validated
-  FILE *pe = fopen(basefilePath, "r");
-  FILE *xex = fopen(xexfilePath, "w+");
+  FILE *pe = fopen(pePath, "rb");
+  FILE *xex = fopen(xexfilePath, "wb+");
 
-  free(basefilePath);
-  free(xexfilePath);
+  free(pePath);
 
+  // Don't free this yet. We need it to determine where we can put the mapped basefile.
+  // There *are* ways to get the file path from file pointer, but none of them are portable.
+  //free(xexfilePath);
+  
   struct offsets offsets;
   struct xexHeader xexHeader;
   struct secInfoHeader secInfoHeader;
@@ -145,17 +150,37 @@ int main(int argc, char **argv)
     }
 
   printf("%s PE valid!\n", PRINT_STEM);
-
-  // TODO: insert functionality HERE to create the basefile from input PE file.
-  // It needs to be loaded into memory as if we are going to execute it (don't need to populate IAT etc though), then written out to file.
-  // Then we can switch the loaded PE file out for the basefile and continue without changing any more code.
+  printf("%s Creating basefile from PE...\n", PRINT_STEM);
   
+  // Determine the path we should save the basefile at and open it.
+  char *basefilePath = malloc((strlen(xexfilePath) + strlen(".basefile") + 1) * sizeof(char));
+  strcpy(basefilePath, xexfilePath);
+  strcat(basefilePath, ".basefile");
+  
+  FILE* basefile = fopen(basefilePath, "wb+");
+  free(xexfilePath); // *Now* we're done with it.
+  free(basefilePath);
+  
+  if(basefile == NULL)
+    {
+      printf("%s ERROR: Could not create basefile. Do you have write permissions in the output directory? Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      free(xexfilePath);
+      free(basefilePath);
+      return -1;
+    }
+  
+  mapPEToBasefile(pe, basefile);
+  fclose(pe);
+  
+  printf("%s Created basefile!\n", PRINT_STEM);
   printf("%s Retrieving header data from basefile...\n", PRINT_STEM);
 
-  if(getHdrData(pe, &peData, 0) != 0)
+  if(getHdrData(basefile, &peData, 0) != 0)
     {
-      printf("%s ERROR: Unknown error in data retrieval from basefile. Aborting.\n", PRINT_STEM);
-      fclose(pe);
+      printf("%s ERROR: Error in data retrieval from basefile. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
       fclose(xex);
       return -1;
     }
@@ -184,7 +209,7 @@ int main(int argc, char **argv)
   printf("%s Building security header...\n", PRINT_STEM);
   setSecInfoHeader(&secInfoHeader, &peData);
   printf("%s Setting page descriptors...\n", PRINT_STEM);
-  setPageDescriptors(pe, &peData, &secInfoHeader);
+  setPageDescriptors(basefile, &peData, &secInfoHeader);
   printf("%s Building optional headers...\n", PRINT_STEM);
   setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
   
@@ -195,10 +220,10 @@ int main(int argc, char **argv)
   // Write out all of the XEX data to file
   printf("%s Writing data to XEX file...\n", PRINT_STEM);
   
-  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, pe, xex) != 0)
+  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, basefile, xex) != 0)
     {
       printf("%s ERROR: Unknown error in XEX write routine. Aborting.\n", PRINT_STEM);
-      fclose(pe);
+      fclose(basefile);
       fclose(xex);
       return -1;
     }
@@ -215,7 +240,7 @@ int main(int argc, char **argv)
   // TEMPORARY: Hashing will be moved to earlier on when imports are implemented
   //setImportsSha1(xex);
   
-  fclose(pe);
+  fclose(basefile);
   fclose(xex);
   
   printf("%s XEX built. Have a nice day!\n\n", PRINT_STEM);

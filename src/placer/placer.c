@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -24,16 +24,6 @@ struct importLibIdcs
   uint32_t header;
   uint32_t entry;
 };
-
-uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
-{
-  if(offset % alignment) // If offset not aligned
-    {
-      return offset + (alignment - (offset % alignment)); // Align
-    }
-
-  return offset; // Offset already aligned
-}
 
 void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset, struct importLibIdcs *importLibIdcs)
 {

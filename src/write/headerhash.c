@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,26 +17,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "headerhash.h"
-
-uint32_t get32BitFromXEX(FILE *xex)
-{
-  uint8_t store[4];
-  fread(store, sizeof(uint8_t), 4, xex);
-  
-  uint32_t result = 0;
-
-  for(int i = 0; i < 4; i++)
-    {
-      result |= store[i] << i * 8;
-    }
-
-  // If system and file endianness don't match we need to change it
-#ifdef LITTLE_ENDIAN_SYSTEM
-  result = ntohl(result);
-#endif
-  
-  return result;
-}
 
 // TEMPORARY, TO BE REPLACED ELSEWHERE WHEN IMPORT HEADER IS IMPLEMENTED
 void setImportsSha1(FILE *xex)

@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -25,7 +25,7 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
   
   for(int i = peData->sections.count - 1; i >= 0; i--)
     {
-      if(currentOffset >= peData->sections.sectionPerms[i].rawOffset)
+      if(currentOffset >= peData->sections.sectionPerms[i].rva)
 	{
 	  return peData->sections.sectionPerms[i].permFlag;
 	}

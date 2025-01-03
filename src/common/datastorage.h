@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@
 #pragma once
 
 #include <arpa/inet.h> // For endian-swapping
+#include "common.h"
 
 // Endian test
 #if 'AB' == 0b100000101000010
@@ -75,7 +76,7 @@ struct sections
 struct sectionPerms
 {
   uint8_t permFlag;
-  uint32_t rawOffset;
+  uint32_t rva;
 };
 
 // Data structs
@@ -180,3 +181,12 @@ struct optHeaders
   struct importLibraries importLibraries;
   struct tlsInfo tlsInfo;
 };
+
+// Functions used for file data manipulation
+
+uint32_t getNextAligned(uint32_t offset, uint32_t alignment);
+
+// TODO: combine these into a single function
+uint32_t get32BitFromPE(FILE *pe);
+uint32_t get16BitFromPE(FILE *pe);
+uint32_t get32BitFromXEX(FILE *xex);
