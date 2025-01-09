@@ -22,12 +22,8 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-// Utility functions to get data from PE file, byte-swapping as required
-uint32_t get32BitFromPE(FILE *pe);
-uint32_t get16BitFromPE(FILE *pe);
-
 // Returns true if PE is valid Xbox 360 PE, else false
-bool validatePE(FILE *pe);
+bool validatePE(FILE *pe, bool skipMachineCheck);
 
 // Gets data required for XEX building from PE
 int getHdrData(FILE *pe, struct peData *peData, uint8_t flags);

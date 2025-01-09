@@ -25,9 +25,10 @@ struct importLibIdcs
   uint32_t entry;
 };
 
-void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset, struct importLibIdcs *importLibIdcs)
+int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset, struct importLibIdcs *importLibIdcs)
 {
   offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t)); // Calloc because 0 values will be used to determine if a header is not present.
+  if(offsets->optHeaders == NULL) {return ERR_OUT_OF_MEM;}
   uint32_t sepHeader = 0; // Separate header iterator, i.e. one with it's data outwith the entries
   
   for(uint32_t i = 0; i < optHeaderEntries->count; i++)
@@ -57,10 +58,12 @@ void setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHe
 	  break;
 	}
     }
+
+  return SUCCESS;
 }
 
 // Todo in future: implement a dynamic optional header selection mechanism instead of hard-coding the basic 5
-void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders)
+int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders)
 {
   // XEX Header
   uint32_t currentOffset = 0x0;
@@ -80,7 +83,13 @@ void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct o
   // Optional headers (minus imports)
   struct importLibIdcs importLibIdcs;
   uint32_t importLibsIdx; // Entry in opt header entries of import libs
-  setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
+  int ret = setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
+
+  if(ret != SUCCESS)
+    {
+      return ret;
+    }
+  
   //currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
   
   // PE basefile
@@ -91,4 +100,6 @@ void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct o
   // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
   //offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
   //optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+
+  return SUCCESS;
 }

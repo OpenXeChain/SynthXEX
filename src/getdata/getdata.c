@@ -19,7 +19,7 @@
 #include "getdata.h"
 
 // Validate PE. This isn't thorough, but it's enough to catch any non-PE/360 files
-bool validatePE(FILE *pe) // True if valid, else false 
+bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false 
 {
   // Check magic
   fseek(pe, 0, SEEK_SET);
@@ -45,7 +45,7 @@ bool validatePE(FILE *pe) // True if valid, else false
   fseek(pe, peHeaderOffset + 0x4, SEEK_SET);
   uint16_t machineID = get16BitFromPE(pe);
 
-  if(machineID != 0x1F2) // 0x1F2 == POWERPCBE
+  if(machineID != 0x1F2 && !skipMachineCheck) // 0x1F2 == POWERPCBE
     {
       return false;
     }

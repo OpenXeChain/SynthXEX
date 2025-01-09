@@ -21,4 +21,4 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-void setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders);
+int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders);

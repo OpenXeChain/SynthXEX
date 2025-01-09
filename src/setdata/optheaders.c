@@ -46,12 +46,13 @@ void setSysFlags(uint32_t *flags)
            XEX_SYS_ALLOW_CONTROL_SWAP;
 }
 
-void setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders)
+int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders)
 {
   // TODO: Dynamically select optional headers to use, instead of hard-coding
   optHeaderEntries->count = 4;
   optHeaderEntries->optHeaderEntry = calloc(5, sizeof(struct optHeaderEntry));
-
+  if(optHeaderEntries->optHeaderEntry == NULL) {return ERR_OUT_OF_MEM;}
+  
   // First optional header (basefile format)
   setBasefileFormat(&(optHeaders->basefileFormat), secInfoHeader);
   optHeaderEntries->optHeaderEntry[0].id = XEX_OPT_ID_BASEFILE_FORMAT;

@@ -21,4 +21,4 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-void placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders);
+int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders);

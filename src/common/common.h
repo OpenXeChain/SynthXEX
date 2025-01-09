@@ -26,7 +26,7 @@
 
 // Program identifiers
 #define VERSION "v0.0.1"
-#define COPYRIGHT "2024"
+#define COPYRIGHT "2024-25"
 #define VERSION_STRING "SynthXEX v0.0.1"
 
 // Print constants
@@ -35,8 +35,10 @@
 // Return values
 #define SUCCESS 0
 
-#define ERR_UNKNOWN_DATA_REQUEST -1;
-#define ERR_MISSING_SECTION_FLAG -2;
-#define ERR_FILE_OPEN -3;
+#define ERR_UNKNOWN_DATA_REQUEST -1
+#define ERR_MISSING_SECTION_FLAG -2
+#define ERR_FILE_OPEN -3
+#define ERR_FILE_READ -4
+#define ERR_OUT_OF_MEM -5
 
 void infoPrint(char *str);

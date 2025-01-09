@@ -67,6 +67,8 @@ int mapPEToBasefile(FILE *pe, FILE *basefile)
   // Copy the PE header and section table to the basefile verbatim
   fseek(pe, 0, SEEK_SET);
   uint8_t *buffer = malloc(headerSize + sectionTableSize);
+  if(buffer == NULL) {return ERR_OUT_OF_MEM;}
+
   fread(buffer, sizeof(uint8_t), headerSize + sectionTableSize, pe);
   fwrite(buffer, sizeof(uint8_t), headerSize + sectionTableSize, basefile);
 
@@ -74,7 +76,8 @@ int mapPEToBasefile(FILE *pe, FILE *basefile)
   for(uint16_t i = 0; i < numberOfSections; i++)
     {
       buffer = realloc(buffer, sectionInfo[i].rawSize * sizeof(uint8_t));
-
+      if(buffer == NULL) {return ERR_OUT_OF_MEM;}
+      
       fseek(pe, sectionInfo[i].offset, SEEK_SET);
       fread(buffer, sizeof(uint8_t), sectionInfo[i].rawSize, pe);
 
@@ -90,6 +93,7 @@ int mapPEToBasefile(FILE *pe, FILE *basefile)
   if(nextAligned != currentOffset)
     {
       buffer = realloc(buffer, 1 * sizeof(uint8_t));
+      if(buffer == NULL) {return ERR_OUT_OF_MEM;}
       buffer[0] = 0;
       fseek(basefile, nextAligned, SEEK_SET);
       fwrite(buffer, sizeof(uint8_t), 1, basefile);

@@ -34,11 +34,12 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
   return XEX_SECTION_RODATA | 0b10000; // We're in the PE header, so RODATA
 }
 
-void setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
+int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
 {
   uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
   secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor)); // The free() for this is called after written to XEX
-
+  if(secInfoHeader->descriptors == NULL) {return ERR_OUT_OF_MEM;}
+  
   // Setting size/info data and calculating hashes for page descriptors
   for(int64_t i = secInfoHeader->pageDescCount - 1; i >= 0; i--)
     {      

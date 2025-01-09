@@ -16,7 +16,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <getopt.h>
 #include "common/common.h"
 #include "common/datastorage.h"
 #include "pemapper/pemapper.h"
@@ -27,6 +26,9 @@
 #include "placer/placer.h"
 #include "write/writexex.h"
 #include "write/headerhash.h"
+
+// Using the standalone getopt bundled, as getopt_long is not POSIX, so we can't rely on <getopt.h>.
+#include <getopt_port/getopt.h>
 
 void dispVer()
 {
@@ -45,33 +47,36 @@ void dispHelp(char **argv)
 {
   printf("\nUsage: %s [OPTION] <ARG>\n\n", argv[0]);
   printf("Options:\n");
-  printf("-h,\t--help,\t\tShow this information\n");
-  printf("-v,\t--version,\tShow version and copyright information\n");
-  printf("-i,\t--input,\tSpecify input PE file path\n");
-  printf("-o,\t--output,\tSpecify output XEX file path\n\n");
+  printf("-h,\t--help,\t\t\tShow this information\n");
+  printf("-v,\t--version,\t\tShow version and copyright information\n");
+  printf("-s,\t--skip-machine-check,\tSkip the PE file machine ID check\n");
+  printf("-i,\t--input,\t\tSpecify input PE file path\n");
+  printf("-o,\t--output,\t\tSpecify output XEX file path\n\n");
 }
 
 int main(int argc, char **argv)
 {
   static struct option longOptions[] =
-    {
-      {"help", no_argument, 0, 0},
-      {"version", no_argument, 0, 0},
-      {"input", required_argument, 0, 0},
-      {"output", required_argument, 0, 0},
-      {0, 0, 0, 0}
-    };
+  {
+    {"help", no_argument, 0, 0},
+    {"version", no_argument, 0, 0},
+    {"skip-machine-check", no_argument, 0, 0},
+    {"input", required_argument, 0, 0},
+    {"output", required_argument, 0, 0},
+    {0, 0, 0, 0}
+  };
 
   int optIndex = 0;
   int option = 0;
 
   bool gotInput = false;
   bool gotOutput = false;
-
-  char *pePath;
-  char *xexfilePath;
+  bool skipMachineCheck = false;
   
-  while((option = getopt_long_only(argc, argv, "hvi:o:", longOptions, &optIndex)) != -1)
+  char *pePath = NULL;
+  char *xexfilePath = NULL;
+  
+  while((option = getopt_long(argc, argv, "hvsi:o:", longOptions, &optIndex)) != -1)
     {      
       if(option == 'h' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
 	{
@@ -83,16 +88,37 @@ int main(int argc, char **argv)
 	  dispVer();
 	  return 0;
 	}
+      else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
+	{
+	  printf("%s WARNING: Skipping machine ID check.\n", PRINT_STEM);
+	  skipMachineCheck = true;
+	}
       else if(option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
 	{
 	  gotInput = true;
 	  pePath = malloc(strlen(optarg) + 1);
+
+	  if(pePath == NULL)
+	    {
+	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	      if(xexfilePath != NULL) {free(xexfilePath);}
+	      return -1;
+	    }
+	  
 	  strncpy(pePath, optarg, strlen(optarg) + 1);
 	}
       else if(option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
 	{
 	  gotOutput = true;
 	  xexfilePath = malloc(strlen(optarg) + 1);
+
+	  if(xexfilePath == NULL)
+	    {
+	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	      if(pePath != NULL) {free(pePath);}
+	      return -1;
+	    }
+	  
 	  strncpy(xexfilePath, optarg, strlen(optarg) + 1);
 	}
     }
@@ -124,13 +150,32 @@ int main(int argc, char **argv)
 
   // Opening the files now that they've been validated
   FILE *pe = fopen(pePath, "rb");
-  FILE *xex = fopen(xexfilePath, "wb+");
+
+  if(pe == NULL)
+    {
+      printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", PRINT_STEM);
+      free(pePath);
+      free(xexfilePath);
+      return -1;
+    }
 
   free(pePath);
+  
+  FILE *xex = fopen(xexfilePath, "wb+");
+
+  if(xex == NULL)
+    {
+      printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      free(xexfilePath);
+      return -1;
+    }
 
   // Don't free this yet. We need it to determine where we can put the mapped basefile.
   // There *are* ways to get the file path from file pointer, but none of them are portable.
   //free(xexfilePath);
+
+  int ret;
   
   struct offsets offsets;
   struct xexHeader xexHeader;
@@ -141,9 +186,10 @@ int main(int argc, char **argv)
 
   printf("%s Validating PE file...\n", PRINT_STEM);
   
-  if(!validatePE(pe))
+  if(!validatePE(pe, skipMachineCheck))
     {
       printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", PRINT_STEM);
+      free(xexfilePath);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -154,6 +200,8 @@ int main(int argc, char **argv)
   
   // Determine the path we should save the basefile at and open it.
   char *basefilePath = malloc((strlen(xexfilePath) + strlen(".basefile") + 1) * sizeof(char));
+  if(basefilePath == NULL) {printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);}
+  
   strcpy(basefilePath, xexfilePath);
   strcat(basefilePath, ".basefile");
   
@@ -163,21 +211,28 @@ int main(int argc, char **argv)
   
   if(basefile == NULL)
     {
-      printf("%s ERROR: Could not create basefile. Do you have write permissions in the output directory? Aborting.\n", PRINT_STEM);
+      printf("%s ERROR: Could not create basefile. Do you have write permission? Aborting.\n", PRINT_STEM);
       fclose(pe);
       fclose(xex);
-      free(xexfilePath);
-      free(basefilePath);
       return -1;
     }
   
-  mapPEToBasefile(pe, basefile);
+  ret = mapPEToBasefile(pe, basefile);
   fclose(pe);
-  
-  printf("%s Created basefile!\n", PRINT_STEM);
-  printf("%s Retrieving header data from basefile...\n", PRINT_STEM);
 
-  if(getHdrData(basefile, &peData, 0) != 0)
+  if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
+  
+  printf("%s Created basefile!\n", PRINT_STEM);  
+  printf("%s Retrieving header data from basefile...\n", PRINT_STEM);
+  ret = getHdrData(basefile, &peData, 0);
+    
+  if(ret == ERR_UNKNOWN_DATA_REQUEST)
     {
       printf("%s ERROR: Error in data retrieval from basefile. Aborting.\n", PRINT_STEM);
       fclose(basefile);
@@ -186,63 +241,70 @@ int main(int argc, char **argv)
     }
 
   printf("%s Got header data from basefile!\n", PRINT_STEM);
-
-  // TEMPORARY: READ IN IMPORT HEADER DATA
-//  FILE *importData = fopen("./import.bin", "r");
-//
-//  struct stat importStat;
-//  fstat(fileno(importData), &importStat);
-//  uint32_t importLen = importStat.st_size;
-//
-//  fread(&(optHeaders.importLibraries.size), sizeof(uint8_t), 4, importData);
-//
-//#ifdef LITTLE_ENDIAN_SYSTEM
-//  optHeaders.importLibraries.size = ntohl(optHeaders.importLibraries.size);
-//#endif
-  
-  //optHeaders.importLibraries.data = malloc(importLen - 0x4 * sizeof(uint8_t));
-  //fread(optHeaders.importLibraries.data, sizeof(uint8_t), importLen - 0x4, importData);
   
   // Setting final XEX data structs
   printf("%s Building XEX header...\n", PRINT_STEM);
   setXEXHeader(&xexHeader);
+  
   printf("%s Building security header...\n", PRINT_STEM);
   setSecInfoHeader(&secInfoHeader, &peData);
+  
   printf("%s Setting page descriptors...\n", PRINT_STEM);
-  setPageDescriptors(basefile, &peData, &secInfoHeader);
+  ret = setPageDescriptors(basefile, &peData, &secInfoHeader);
+
+  if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
+  
   printf("%s Building optional headers...\n", PRINT_STEM);
-  setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+  ret = setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+
+  if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
   
   // Setting data positions...
   printf("%s Aligning data...\n", PRINT_STEM);
-  placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
+  ret = placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
+
+  if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
   
   // Write out all of the XEX data to file
   printf("%s Writing data to XEX file...\n", PRINT_STEM);
+  ret = writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, basefile, xex);
   
-  if(writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, basefile, xex) != 0)
+  if(ret == ERR_OUT_OF_MEM)
     {
-      printf("%s ERROR: Unknown error in XEX write routine. Aborting.\n", PRINT_STEM);
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
       fclose(basefile);
       fclose(xex);
       return -1;
     }
 
   printf("%s Main data written to XEX file!\n", PRINT_STEM);
-  
-  //free(optHeaders.importLibraries.data);
 
   // Final pass (sets & writes header hash)
   printf("%s Calculating and writing header SHA1...\n", PRINT_STEM);
   setHeaderSha1(xex);
   printf("%s Header SHA1 written!\n", PRINT_STEM);
-
-  // TEMPORARY: Hashing will be moved to earlier on when imports are implemented
-  //setImportsSha1(xex);
   
   fclose(basefile);
   fclose(xex);
   
   printf("%s XEX built. Have a nice day!\n\n", PRINT_STEM);
-  return 0;
+  return SUCCESS;
 }

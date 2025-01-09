@@ -74,7 +74,8 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   
   uint16_t readBufSize = 0x1000; // Reading in 4KiB at a time to avoid excessive memory usage
   uint8_t *buffer = malloc(readBufSize * sizeof(uint8_t));
-
+  if(buffer == NULL) {return ERR_OUT_OF_MEM;}
+  
   for(uint32_t i = 0; i < secInfoHeader->peSize; i += readBufSize)
     {
       fread(buffer, sizeof(uint8_t), readBufSize, pe);
