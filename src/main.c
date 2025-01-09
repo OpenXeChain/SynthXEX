@@ -27,8 +27,62 @@
 #include "write/writexex.h"
 #include "write/headerhash.h"
 
-// Using the standalone getopt bundled, as getopt_long is not POSIX, so we can't rely on <getopt.h>.
+// Using the standalone getopt bundled, as getopt_long is not POSIX, so we can't rely on system <getopt.h>.
 #include <getopt_port/getopt.h>
+
+void dispLibs()
+{
+  printf("\nLibraries utilised by SynthXEX:\n\n");
+
+  printf("----- GETOPT_PORT -----\n\n");
+  printf("Copyright (c) 2012-2023, Kim Grasman <kim.grasman@gmail.com>\n");
+  printf("All rights reserved.\n\n");
+
+  printf("Redistribution and use in source and binary forms, with or without\n");
+  printf("modification, are permitted provided that the following conditions are met:\n");
+  printf("* Redistributions of source code must retain the above copyright\n");
+  printf("  notice, this list of conditions and the following disclaimer.\n");
+  printf("* Redistributions in binary form must reproduce the above copyright\n");
+  printf("  notice, this list of conditions and the following disclaimer in the\n");
+  printf("  documentation and/or other materials provided with the distribution.\n");
+  printf("* Neither the name of Kim Grasman nor the\n");
+  printf("  names of contributors may be used to endorse or promote products\n");
+  printf("  derived from this software without specific prior written permission.\n\n");
+
+  printf("THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n");
+  printf("ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n");
+  printf("WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n");
+  printf("DISCLAIMED. IN NO EVENT SHALL KIM GRASMAN BE LIABLE FOR ANY\n");
+  printf("DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n");
+  printf("(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n");
+  printf("LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND\n");
+  printf("ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n");
+  printf("(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n");
+  printf("SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\n\n");
+
+  printf("----- GNU NETTLE (SHA-1) -----\n\n");
+  printf("Copyright (C) 2001, 2013 Niels Möller\n");
+  printf("This file is part of GNU Nettle.\n\n");
+
+  printf("GNU Nettle is free software: you can redistribute it and/or\n");
+  printf("modify it under the terms of either:\n\n");
+  printf("* the GNU Lesser General Public License as published by the Free\n");
+  printf("  Software Foundation; either version 3 of the License, or (at your\n");
+  printf("  option) any later version.\n\n");
+  printf("or\n\n");
+  printf("* the GNU General Public License as published by the Free\n");
+  printf("  Software Foundation; either version 2 of the License, or (at your\n");
+  printf("  option) any later version.\n\n");
+  printf("or both in parallel, as here.\n\n");
+
+  printf("GNU Nettle is distributed in the hope that it will be useful,\n");
+  printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
+  printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU\n");
+  printf("General Public License for more details.\n\n");
+  printf("You should have received copies of the GNU General Public License and\n");
+  printf("the GNU Lesser General Public License along with this program. If\n");
+  printf("not, see http://www.gnu.org/licenses/.\n\n");
+}
 
 void dispVer()
 {
@@ -37,10 +91,10 @@ void dispVer()
   printf("it under the terms of the GNU Affero General Public License as published by\n");
   printf("the Free Software Foundation, either version 3 of the License, or\n");
   printf("(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\n");
-  printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
+  printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n");
   printf("GNU Affero General Public License for more details.\n\n");
   printf("You should have received a copy of the GNU Affero General Public License\n");
-  printf("along with this program.  If not, see <https://www.gnu.org/licenses/>.\n\n");
+  printf("along with this program. If not, see <https://www.gnu.org/licenses/>.\n\n");
 }
 
 void dispHelp(char **argv)
@@ -48,7 +102,8 @@ void dispHelp(char **argv)
   printf("\nUsage: %s [OPTION] <ARG>\n\n", argv[0]);
   printf("Options:\n");
   printf("-h,\t--help,\t\t\tShow this information\n");
-  printf("-v,\t--version,\t\tShow version and copyright information\n");
+  printf("-v,\t--version,\t\tShow version and licensing information\n");
+  printf("-l,\t--libs,\t\t\tShow licensing information of libraries used\n");
   printf("-s,\t--skip-machine-check,\tSkip the PE file machine ID check\n");
   printf("-i,\t--input,\t\tSpecify input PE file path\n");
   printf("-o,\t--output,\t\tSpecify output XEX file path\n\n");
@@ -60,6 +115,7 @@ int main(int argc, char **argv)
   {
     {"help", no_argument, 0, 0},
     {"version", no_argument, 0, 0},
+    {"libs", no_argument, 0, 0},
     {"skip-machine-check", no_argument, 0, 0},
     {"input", required_argument, 0, 0},
     {"output", required_argument, 0, 0},
@@ -76,17 +132,22 @@ int main(int argc, char **argv)
   char *pePath = NULL;
   char *xexfilePath = NULL;
   
-  while((option = getopt_long(argc, argv, "hvsi:o:", longOptions, &optIndex)) != -1)
+  while((option = getopt_long(argc, argv, "hvlsi:o:", longOptions, &optIndex)) != -1)
     {      
-      if(option == 'h' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
+      if(option == 'h' || option == '?' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
 	{
 	  dispHelp(argv);
-	  return 0;
+	  return SUCCESS;
 	}
       else if(option == 'v' || (option == 0 && strcmp(longOptions[optIndex].name, "version") == 0))
 	{
 	  dispVer();
-	  return 0;
+	  return SUCCESS;
+	}
+      else if(option == 'l' || (option == 0 && strcmp(longOptions[optIndex].name, "libs") == 0))
+	{
+	  dispLibs();
+	  return SUCCESS;
 	}
       else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
 	{
@@ -124,7 +185,7 @@ int main(int argc, char **argv)
     }
 
   printf("%s This is SynthXEX, %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION, COPYRIGHT);
-  printf("%s This program is free/libre software. Run \"%s --version\" for license info.\n\n", PRINT_STEM, argv[0]);
+  printf("%s This program is free/libre software. Run \"%s --version\" for info.\n\n", PRINT_STEM, argv[0]);
   
   // Check we got everything we need
   if(!gotInput)
