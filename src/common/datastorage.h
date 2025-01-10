@@ -87,6 +87,11 @@ struct peData
   uint32_t entryPoint;
   uint32_t tlsAddr;
   uint32_t tlsSize;
+  uint32_t peHeaderOffset;
+  uint16_t numberOfSections;
+  uint32_t sectionTableSize;
+  uint32_t headerSize;
+  uint32_t pageSize;
   struct sections sections;
 };
 

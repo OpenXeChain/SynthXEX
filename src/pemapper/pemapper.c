@@ -27,53 +27,31 @@ struct sectionInfo
 };
 
 // Maps the PE file into the basefile (RVAs become offsets)
-int mapPEToBasefile(FILE *pe, FILE *basefile)
+int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
 {
-  // Get data about the header
-
-  // Get PE header offset
-  fseek(pe, 0x3C, SEEK_SET);
-  uint32_t peHeaderOffset = get32BitFromPE(pe);
-
-  // Get size of optional header
-  fseek(pe, peHeaderOffset + 0x14, SEEK_SET);
-  uint16_t optHeaderSize = get16BitFromPE(pe);
-
-  // Calculate total header size (0x18 == size of COFF headers)
-  uint32_t headerSize = (peHeaderOffset + 1) + 0x18 + optHeaderSize;
-
-  // Get page size
-  fseek(pe, peHeaderOffset + 0x38, SEEK_SET);
-  uint32_t pageSize = get32BitFromPE(pe);
-
-  // Get number of sections and calculate section table size
-  fseek(pe, peHeaderOffset + 0x6, SEEK_SET);
-  uint16_t numberOfSections = get16BitFromPE(pe);
-  uint32_t sectionTableSize = numberOfSections * 0x28;
-  
   // Retrieve data for each section
-  struct sectionInfo *sectionInfo = malloc(numberOfSections * sizeof(struct sectionInfo));
-  fseek(pe, (headerSize - 1) + 0x8, SEEK_SET); // Seek to the first section in the section table at virtualSize
+  struct sectionInfo *sectionInfo = malloc(peData->numberOfSections * sizeof(struct sectionInfo));
+  fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET); // Seek to the first section in the section table at virtualSize
 
-  for(uint16_t i = 0; i < numberOfSections; i++)
+  for(uint16_t i = 0; i < peData->numberOfSections; i++)
     {
       sectionInfo[i].virtualSize = get32BitFromPE(pe);
       sectionInfo[i].rva = get32BitFromPE(pe);
       sectionInfo[i].rawSize = get32BitFromPE(pe);
-      sectionInfo[i].offset = get32BitFromPE(pe);
+      sectionInfo[i].offset = get32BitFromPE(pe);      
       fseek(pe, 0x18, SEEK_CUR); // Seek to next entry at virtualSize
     }
   
   // Copy the PE header and section table to the basefile verbatim
   fseek(pe, 0, SEEK_SET);
-  uint8_t *buffer = malloc(headerSize + sectionTableSize);
+  uint8_t *buffer = malloc(peData->headerSize + peData->sectionTableSize);
   if(buffer == NULL) {return ERR_OUT_OF_MEM;}
 
-  fread(buffer, sizeof(uint8_t), headerSize + sectionTableSize, pe);
-  fwrite(buffer, sizeof(uint8_t), headerSize + sectionTableSize, basefile);
+  fread(buffer, sizeof(uint8_t), peData->headerSize + peData->sectionTableSize, pe);
+  fwrite(buffer, sizeof(uint8_t), peData->headerSize + peData->sectionTableSize, basefile);
 
   // Now map the sections and write them
-  for(uint16_t i = 0; i < numberOfSections; i++)
+  for(uint16_t i = 0; i < peData->numberOfSections; i++)
     {
       buffer = realloc(buffer, sectionInfo[i].rawSize * sizeof(uint8_t));
       if(buffer == NULL) {return ERR_OUT_OF_MEM;}
@@ -88,7 +66,7 @@ int mapPEToBasefile(FILE *pe, FILE *basefile)
   // Pad the rest of the final page with zeroes, we can achieve this by seeking
   // to the end and placing a single zero there (unless the data runs all the way up to the end!)
   uint32_t currentOffset = ftell(basefile);
-  uint32_t nextAligned = getNextAligned(currentOffset, pageSize) - 0x1;
+  uint32_t nextAligned = getNextAligned(currentOffset, peData->pageSize) - 0x1;
 
   if(nextAligned != currentOffset)
     {
@@ -98,6 +76,9 @@ int mapPEToBasefile(FILE *pe, FILE *basefile)
       fseek(basefile, nextAligned, SEEK_SET);
       fwrite(buffer, sizeof(uint8_t), 1, basefile);
     }
+
+  // Make sure to update the PE (basefile) size
+  peData->size = ftell(basefile);
   
   // We're done with these, free them
   free(buffer);

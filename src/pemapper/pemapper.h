@@ -21,4 +21,4 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-int mapPEToBasefile(FILE *pe, FILE *basefile);
+int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData);

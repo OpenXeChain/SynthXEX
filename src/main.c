@@ -86,7 +86,7 @@ void dispLibs()
 
 void dispVer()
 {
-  printf("\nSynthXEX %s\n\nThe XEX builder of the FreeChainXenon project\n\n", VERSION);
+  printf("\n%s\n\nThe XEX builder of the FreeChainXenon project\n\n", VERSION_STRING);
   printf("Copyright (c) %s Aiden Isik\n\nThis program is free software: you can redistribute it and/or modify\n", COPYRIGHT);
   printf("it under the terms of the GNU Affero General Public License as published by\n");
   printf("the Free Software Foundation, either version 3 of the License, or\n");
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 	}
     }
 
-  printf("%s This is SynthXEX, %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION, COPYRIGHT);
+  printf("%s This is %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION_STRING, COPYRIGHT);
   printf("%s This program is free/libre software. Run \"%s --version\" for info.\n\n", PRINT_STEM, argv[0]);
   
   // Check we got everything we need
@@ -257,12 +257,55 @@ int main(int argc, char **argv)
     }
 
   printf("%s PE valid!\n", PRINT_STEM);
-  printf("%s Creating basefile from PE...\n", PRINT_STEM);
+
+  // Reading in header data from PE
+  printf("%s Retrieving header data from PE...\n", PRINT_STEM);
+  ret = getHdrData(pe, &peData, 0);
+  
+  if(ret == ERR_UNKNOWN_DATA_REQUEST)
+    {
+      printf("%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+  else if(ret == ERR_FILE_READ)
+    {
+      printf("%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+  else if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+  else if(ret == ERR_MISSING_SECTION_FLAG)
+    {
+      printf("%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+
+  printf("%s Got header data from PE!\n", PRINT_STEM);
   
   // Determine the path we should save the basefile at and open it.
+  printf("%s Creating basefile from PE...\n", PRINT_STEM);
   char *basefilePath = malloc((strlen(xexfilePath) + strlen(".basefile") + 1) * sizeof(char));
-  if(basefilePath == NULL) {printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);}
-  
+
+  if(basefilePath == NULL)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      free(xexfilePath);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
+
   strcpy(basefilePath, xexfilePath);
   strcat(basefilePath, ".basefile");
   
@@ -277,8 +320,9 @@ int main(int argc, char **argv)
       fclose(xex);
       return -1;
     }
-  
-  ret = mapPEToBasefile(pe, basefile);
+
+  // Map the PE into the basefile (RVAs become offsets)
+  ret = mapPEToBasefile(pe, basefile, &peData);
   fclose(pe);
 
   if(ret == ERR_OUT_OF_MEM)
@@ -290,18 +334,6 @@ int main(int argc, char **argv)
     }
   
   printf("%s Created basefile!\n", PRINT_STEM);  
-  printf("%s Retrieving header data from basefile...\n", PRINT_STEM);
-  ret = getHdrData(basefile, &peData, 0);
-    
-  if(ret == ERR_UNKNOWN_DATA_REQUEST)
-    {
-      printf("%s ERROR: Error in data retrieval from basefile. Aborting.\n", PRINT_STEM);
-      fclose(basefile);
-      fclose(xex);
-      return -1;
-    }
-
-  printf("%s Got header data from basefile!\n", PRINT_STEM);
   
   // Setting final XEX data structs
   printf("%s Building XEX header...\n", PRINT_STEM);

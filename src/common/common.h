@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -25,9 +25,15 @@
 #include <stdbool.h>
 
 // Program identifiers
+#define NAME "SynthXEX"
 #define VERSION "v0.0.1"
 #define COPYRIGHT "2024-25"
-#define VERSION_STRING "SynthXEX v0.0.1"
+
+#ifdef GIT_COMMIT
+#define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT 
+#else
+#define VERSION_STRING NAME " " VERSION
+#endif
 
 // Print constants
 #define PRINT_STEM "SynthXEX>"
