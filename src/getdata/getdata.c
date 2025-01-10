@@ -26,7 +26,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
 {
   // Check if we have at least the size of a DOS header, so we don't overrun the PE
   fseek(pe, 0, SEEK_END);
-  size_t finalOffset = ftell(pe) - 1;
+  size_t finalOffset = ftell(pe);
 
   if(finalOffset < 0x3C + 0x4)
     {
