@@ -290,6 +290,13 @@ int main(int argc, char **argv)
       fclose(xex);
       return -1;
     }
+  else if(ret == ERR_UNSUPPORTED_STRUCTURE)
+    {
+      printf("%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
+      fclose(pe);
+      fclose(xex);
+      return -1;
+    }
 
   printf("%s Got header data from PE!\n", PRINT_STEM);
   

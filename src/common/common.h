@@ -46,5 +46,6 @@
 #define ERR_FILE_OPEN -3
 #define ERR_FILE_READ -4
 #define ERR_OUT_OF_MEM -5
+#define ERR_UNSUPPORTED_STRUCTURE -6
 
 void infoPrint(char *str);

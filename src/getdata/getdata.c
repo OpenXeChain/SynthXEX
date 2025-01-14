@@ -206,10 +206,11 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
   fseek(pe, peData->peHeaderOffset + 0x38, SEEK_SET);
   peData->pageSize = get32BitFromPE(pe);
 
-  // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort (handled elsewhere))
+  // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort)
   fseek(pe, peData->peHeaderOffset + 0xC0, SEEK_SET);
   peData->tlsAddr = get32BitFromPE(pe);
   peData->tlsSize = get32BitFromPE(pe);
+  if(peData->tlsAddr != 0 || peData->tlsSize != 0) {return ERR_UNSUPPORTED_STRUCTURE;}
 
   // Page RWX flags
   int ret = getSectionRwxFlags(pe, &(peData->sections));
