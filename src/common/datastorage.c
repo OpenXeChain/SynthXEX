@@ -50,7 +50,7 @@ uint32_t get32BitFromPE(FILE *pe)
   return result;
 }
 
-uint32_t get16BitFromPE(FILE *pe)
+uint16_t get16BitFromPE(FILE *pe)
 {
   uint8_t store[2];
   fread(store, sizeof(uint8_t), 2, pe);

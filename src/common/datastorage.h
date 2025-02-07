@@ -193,5 +193,5 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment);
 
 // TODO: combine these into a single function
 uint32_t get32BitFromPE(FILE *pe);
-uint32_t get16BitFromPE(FILE *pe);
+uint16_t get16BitFromPE(FILE *pe);
 uint32_t get32BitFromXEX(FILE *xex);
