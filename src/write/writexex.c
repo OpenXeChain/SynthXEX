@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -113,11 +113,16 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       optHeaders->basefileFormat.size = htonl(optHeaders->basefileFormat.size);
       optHeaders->basefileFormat.encType = htons(optHeaders->basefileFormat.encType);
       optHeaders->basefileFormat.compType = htons(optHeaders->basefileFormat.compType);
-      optHeaders->basefileFormat.dataSize = htonl(optHeaders->basefileFormat.dataSize);
-      optHeaders->basefileFormat.zeroSize = htonl(optHeaders->basefileFormat.zeroSize);
+
+      for(uint32_t i = 0; i < optHeaders->basefileFormat.zeroElimCount; i++)
+	{
+	  optHeaders->basefileFormat.zeroEliminations[i].dataSize = htonl(optHeaders->basefileFormat.zeroEliminations[i].dataSize);
+	  optHeaders->basefileFormat.zeroEliminations[i].zeroSize = htonl(optHeaders->basefileFormat.zeroEliminations[i].zeroSize);
+	}
 #endif
       
-      fwrite(&(optHeaders->basefileFormat), sizeof(uint8_t), sizeof(struct basefileFormat), xex);
+      fwrite(&(optHeaders->basefileFormat), sizeof(uint8_t), 0x8, xex); // Write basefile format header
+      fwrite(optHeaders->basefileFormat.zeroEliminations, sizeof(struct zeroEliminations), optHeaders->basefileFormat.zeroElimCount, xex); // Write zero elimination information
       currentHeader++;
     }
 
@@ -148,7 +153,9 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
       fwrite(&(optHeaders->tlsInfo), sizeof(uint8_t), sizeof(struct tlsInfo), xex);
     }
+
   
+  free(optHeaders->basefileFormat.zeroEliminations); // Alloc'd in elimzeroes.
   free(offsets->optHeaders); // Alloc'd in placer.
   return SUCCESS;
 }

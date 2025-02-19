@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -18,13 +18,12 @@
 
 #include "optheaders.h"
 
-void setBasefileFormat(struct basefileFormat *basefileFormat, struct secInfoHeader *secInfoHeader)
+void setBasefileFormat(struct basefileFormat *basefileFormat)
 {
-  basefileFormat->size = (1 * 8) + 8; // (Block count * size of raw data descriptor) + size of data descriptor
+  basefileFormat->size = 0x8; // This will be increased when zero-elimination is done
   basefileFormat->encType = 0x0; // No encryption
   basefileFormat->compType = 0x1; // No compression
-  basefileFormat->dataSize = secInfoHeader->peSize;
-  basefileFormat->zeroSize = 0x0; // We aren't going to be removing any zeroes. TODO: implement this, it can make files much smaller
+  basefileFormat->zeroElimCount = 0; // Starting from 0, will be increased when zero-elimination is done
 }
 
 // STUB. TLS info not supported.
@@ -54,7 +53,7 @@ int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, st
   if(optHeaderEntries->optHeaderEntry == NULL) {return ERR_OUT_OF_MEM;}
   
   // First optional header (basefile format)
-  setBasefileFormat(&(optHeaders->basefileFormat), secInfoHeader);
+  setBasefileFormat(&(optHeaders->basefileFormat));
   optHeaderEntries->optHeaderEntry[0].id = XEX_OPT_ID_BASEFILE_FORMAT;
 
   // Second optional header (entrypoint)

@@ -23,6 +23,7 @@
 #include "setdata/populateheaders.h"
 #include "setdata/pagedescriptors.h"
 #include "setdata/optheaders.h"
+#include "setdata/elimzeroes.h"
 #include "placer/placer.h"
 #include "write/writexex.h"
 #include "write/headerhash.h"
@@ -362,6 +363,17 @@ int main(int argc, char **argv)
   
   printf("%s Building optional headers...\n", PRINT_STEM);
   ret = setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+
+  if(ret == ERR_OUT_OF_MEM)
+    {
+      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
+
+  printf("%s Eliminating zeroes...\n", PRINT_STEM);
+  ret = eliminateZeroes(basefile, &(optHeaders.basefileFormat));
 
   if(ret == ERR_OUT_OF_MEM)
     {
