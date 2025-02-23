@@ -38,9 +38,9 @@ int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHea
       switch(optHeaderEntries->optHeaderEntry[i].id)
 	{
 	case XEX_OPT_ID_BASEFILE_FORMAT:
-	  *currentOffset += sizeof(struct basefileFormat);
 	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
 	  offsets->optHeaders[sepHeader] = *currentOffset;
+	  *currentOffset += (sizeof(struct basefileFormat) - sizeof(uint32_t) - sizeof(void*)) + (optHeaders->basefileFormat.zeroElimCount * sizeof(struct zeroEliminations));
 	  sepHeader++;
 	  break;
 
@@ -51,9 +51,9 @@ int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHea
 	  break;
 
 	case XEX_OPT_ID_TLS_INFO:
-	  *currentOffset += sizeof(struct tlsInfo);
 	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
 	  offsets->optHeaders[sepHeader] = *currentOffset;
+	  *currentOffset += sizeof(struct tlsInfo);
 	  sepHeader++;
 	  break;
 	}
