@@ -145,19 +145,13 @@ struct __attribute__((packed)) secInfoHeader
   struct pageDescriptor *descriptors;
 };
 
-struct __attribute__((packed)) zeroEliminations
-{
-  uint32_t dataSize;
-  uint32_t zeroSize;
-};
-
 struct __attribute__((packed)) basefileFormat
 {
   uint32_t size;
   uint16_t encType;
   uint16_t compType;
-  uint32_t zeroElimCount;
-  struct zeroEliminations *zeroEliminations;
+  uint32_t dataSize;
+  uint32_t zeroSize;
 };
 
 struct __attribute__((packed)) importLibraries

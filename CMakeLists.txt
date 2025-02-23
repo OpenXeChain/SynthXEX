@@ -40,12 +40,9 @@ list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/placer/placer.c)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/optheaders.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/pagedescriptors.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/populateheaders.h)
-list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/elimzeroes.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/optheaders.c)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/pagedescriptors.c)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/populateheaders.c)
-list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/setdata/elimzeroes.c)
-
 
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/write/headerhash.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/write/writexex.h)

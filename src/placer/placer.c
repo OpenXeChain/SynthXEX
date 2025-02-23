@@ -40,7 +40,7 @@ int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHea
 	case XEX_OPT_ID_BASEFILE_FORMAT:
 	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
 	  offsets->optHeaders[sepHeader] = *currentOffset;
-	  *currentOffset += (sizeof(struct basefileFormat) - sizeof(uint32_t) - sizeof(void*)) + (optHeaders->basefileFormat.zeroElimCount * sizeof(struct zeroEliminations));
+	  *currentOffset += sizeof(struct basefileFormat);
 	  sepHeader++;
 	  break;
 
