@@ -132,32 +132,135 @@ int getSectionRwxFlags(FILE *pe, struct sections *sections)
   if(sections->sectionPerms == NULL) {return ERR_OUT_OF_MEM;}
   fseek(pe, peOffset + 0xF8, SEEK_SET); // 0xF8 == beginning of section table
 
-  for(uint16_t i = 0; i < sections->count; i++)
+  for(uint32_t i = 0; i < sections->count; i++)
     {
-      fseek(pe, 0xC, SEEK_CUR); // Seek to RVA of section
-      sections->sectionPerms[i].rva = get32BitFromPE(pe);
+      // Check if we're part of the ELF section. If we are, handle it's segment permission flags.
+      char sectionName[9] = {0}; // 8 chars, followed by null terminator
+      fread(sectionName, sizeof(char), 0x8, pe);
 
-      fseek(pe, 0x14, SEEK_CUR); // Now progress to characteristics, where we will check flags
-      uint32_t characteristics = get32BitFromPE(pe);
+      if(!strcmp(sectionName, ".elf")) // .elf section
+	{
+	  fseek(pe, 0x4, SEEK_CUR);
+	  uint32_t elfRVA = get32BitFromPE(pe); // Store the base RVA for the ELF
 
-      if(characteristics & PE_SECTION_FLAG_EXECUTE)
-	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
-	}
-      else if(characteristics & PE_SECTION_FLAG_WRITE || characteristics & PE_SECTION_FLAG_DISCARDABLE)
-	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
-	}
-      else if(characteristics & PE_SECTION_FLAG_READ)
-	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_RODATA | 0b10000;
-	}
-      else
-	{
-	  return ERR_MISSING_SECTION_FLAG;
-	}
+	  // Get the offset in the PE of the ELF
+	  uint32_t elfSize = get32BitFromPE(pe); // Store the size of the ELF
+	  uint32_t elfBaseOffset = get32BitFromPE(pe);
 
-      // Don't need to progress any more to get to beginning of next entry, as characteristics is last field
+	  // Set the end of the current section entry as the offset to return to when we're done with the ELF
+	  uint32_t returnToOffset = ftell(pe) + 0x10;
+
+	  // Verify that the .elf section actually contains an ELF. If it doesn't, just treat it like any other section.
+	  fseek(pe, elfBaseOffset, SEEK_SET);
+	  uint8_t elfMagic[4] = {0x7F, 'E', 'L', 'F'};
+	  uint8_t readMagic[4] = {0};
+	  fread(readMagic, sizeof(uint8_t), 0x4, pe);
+
+	  // If we're NOT an ELF, handle this section like any other
+	  if(memcmp(elfMagic, readMagic, 0x4 * sizeof(uint8_t)))
+	    {
+	      goto notElfInSection;
+	    }
+
+	  // Get the section table offset
+	  fseek(pe, elfBaseOffset + 0x20, SEEK_SET);
+	  uint32_t sectionTableOffset = get32BitFromXEX(pe); // Should probably rename this function... Used for any big-endian value.
+
+	  // Get the number of sections
+	  fseek(pe, elfBaseOffset + 0x30, SEEK_SET);
+	  uint16_t sectionCount = get16BitFromXEX(pe);
+
+	  // Check that the data we got makes sense (smaller than .elf section)
+	  if(sectionTableOffset + (sectionCount * 0x28) > elfSize || sectionCount < 2) // 0x28 == size of each entry
+	    {
+	      goto notElfInSection;
+	    }
+
+	  // The offsets and sizes seem to check out, start processing the permissions
+	  fseek(pe, elfBaseOffset + sectionTableOffset + 0x28, SEEK_SET); // +0x28 to skip to index 1 (0 is empty)
+	  sections->count += sectionCount;
+	  sections->sectionPerms = realloc(sections->sectionPerms, sections->count * sizeof(struct sectionPerms));
+	  if(sections->sectionPerms == NULL) {return ERR_OUT_OF_MEM;}
+
+	  for(uint32_t j = i; i < j + sectionCount; i++)
+	    {
+	      // Get the flags
+	      fseek(pe, 0x8, SEEK_CUR);
+	      uint32_t flags = get32BitFromXEX(pe);
+
+	      // Calculate the RVA of the current section
+	      fseek(pe, 0x4, SEEK_CUR);
+	      sections->sectionPerms[i].rva = get32BitFromXEX(pe) + elfRVA;
+
+	      // Translate ELF permissions to XEX permissions
+	      if(flags & ELF_SECTION_FLAG_EXECUTABLE)
+		{
+		  sections->sectionPerms[i].permFlag = XEX_SECTION_CODE | 0b10000;
+		}
+	      else if(flags & ELF_SECTION_FLAG_WRITE)
+		{
+		  sections->sectionPerms[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
+		}
+	      else if(flags & ELF_SECTION_FLAG_ALLOC)
+		{
+		  sections->sectionPerms[i].permFlag = XEX_SECTION_RODATA | 0b10000;
+		}
+	      else
+		{
+		  // If an ELF section doesn't have any of the above flags, it's a non-runtime section.
+		  // Ignore it and move onto the next one.
+		  sectionCount--;
+		  sections->count--;
+		  sections->sectionPerms = realloc(sections->sectionPerms, sections->count * sizeof(struct sectionPerms));
+		  if(sections->sectionPerms == NULL) {return ERR_OUT_OF_MEM;}
+		  i--;
+		}
+
+	      // Move to end of current entry
+	      fseek(pe, 0x14, SEEK_CUR);
+
+	      continue;
+
+	      // This code is here so we only ever trigger it when we explicitly jump to it
+	    notElfInSection:
+	      // Seek back to the start of the section entry
+	      fseek(pe, returnToOffset - 0x28, SEEK_SET);
+  
+	      // Jump to the code to handle normal sections
+	      goto normalSectionHandling;
+	    }
+
+	  // Return to the PE section table at the start of the next entry
+	  fseek(pe, returnToOffset, SEEK_SET);
+	}
+      else // Not the .elf section
+	{
+	normalSectionHandling:
+	  fseek(pe, 0x4, SEEK_CUR); // Seek to RVA of section
+	  sections->sectionPerms[i].rva = get32BitFromPE(pe);
+
+	  fseek(pe, 0x14, SEEK_CUR); // Now progress to characteristics, where we will check flags
+	  uint32_t characteristics = get32BitFromPE(pe);
+
+	  if(characteristics & PE_SECTION_FLAG_EXECUTE)
+	    {
+	      sections->sectionPerms[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
+	    }
+	  else if(characteristics & PE_SECTION_FLAG_WRITE || characteristics & PE_SECTION_FLAG_DISCARDABLE)
+	    {
+	      sections->sectionPerms[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
+	    }
+	  else if(characteristics & PE_SECTION_FLAG_READ)
+	    {
+	      sections->sectionPerms[i].permFlag = XEX_SECTION_RODATA | 0b10000;
+	    }
+	  else
+	    {
+	      return ERR_MISSING_SECTION_FLAG;
+	    }
+
+	  // Don't need to progress any more to get to beginning of next entry, as characteristics is last field
+	}
     }
   
   return SUCCESS;

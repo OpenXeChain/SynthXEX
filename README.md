@@ -46,6 +46,12 @@ Build: ```make```
 
 Install: ```sudo make install```
 
+## Special thanks to:
+- [InvoxiPlayGames](https://github.com/InvoxiPlayGames), for help understanding the XEX format
+- [emoose](https://github.com/emoose), for xex1tool, which was very useful for taking apart XEX files and getting info from them
+- [Free60Project](https://github.com/Free60Project), for documentation on the XEX format, which was useful in the early days
+- Several other members of the Xbox360Hub Discord server, for a multitude of reasons
+
 ## Licensing
 
 ### SynthXEX (src/*, CMakeLists.txt)

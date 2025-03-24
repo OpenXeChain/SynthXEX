@@ -61,6 +61,11 @@
 #define PE_SECTION_FLAG_READ        0x40000000
 #define PE_SECTION_FLAG_WRITE       0x80000000
 
+// RWX flags (ELF)
+#define ELF_SECTION_FLAG_WRITE      0x1
+#define ELF_SECTION_FLAG_ALLOC      0x2
+#define ELF_SECTION_FLAG_EXECUTABLE 0x4
+
 // RWX flags (XEX)
 #define XEX_SECTION_CODE   0x1
 #define XEX_SECTION_RWDATA 0x2
@@ -69,7 +74,7 @@
 // Page RWX flags
 struct sections
 {
-  uint16_t count;
+  uint32_t count;
   struct sectionPerms *sectionPerms;
 };
 
@@ -195,3 +200,4 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment);
 uint32_t get32BitFromPE(FILE *pe);
 uint16_t get16BitFromPE(FILE *pe);
 uint32_t get32BitFromXEX(FILE *xex);
+uint16_t get16BitFromXEX(FILE *xex);

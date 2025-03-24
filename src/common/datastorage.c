@@ -89,3 +89,23 @@ uint32_t get32BitFromXEX(FILE *xex)
   
   return result;
 }
+
+uint16_t get16BitFromXEX(FILE *xex)
+{
+  uint8_t store[2];
+  fread(store, sizeof(uint8_t), 2, xex);
+  
+  uint32_t result = 0;
+
+  for(int i = 0; i < 2; i++)
+    {
+      result |= store[i] << i * 8;
+    }
+
+  // If system and file endianness don't match we need to change it
+#ifdef LITTLE_ENDIAN_SYSTEM
+  result = ntohs(result);
+#endif
+  
+  return result;
+}
