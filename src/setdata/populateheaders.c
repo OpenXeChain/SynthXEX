@@ -18,11 +18,28 @@
 
 #include "populateheaders.h"
 
-void setXEXHeader(struct xexHeader *xexHeader)
+void setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
 {
   // Writing data into XEX header.
   strcpy(xexHeader->magic, "XEX2"); // Magic
-  xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE; // Hard-coding until more options supported
+
+  // Module flags (type of executable)
+  xexHeader->moduleFlags = 0;
+  
+  if(peData->characteristics & PE_CHAR_FLAG_DLL)
+    {
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL; // The executable is a DLL
+    }
+  else
+    {
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE; // The executable is a regular title
+    }
+
+  if(peData->peExportInfo.count > 0)
+    {
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
+    }
+  
   xexHeader->optHeaderCount = 0x4; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
 }
 

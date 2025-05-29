@@ -344,7 +344,7 @@ int main(int argc, char **argv)
   
   // Setting final XEX data structs
   printf("%s Building XEX header...\n", PRINT_STEM);
-  setXEXHeader(&xexHeader);
+  setXEXHeader(&xexHeader, &peData);
   
   printf("%s Building security header...\n", PRINT_STEM);
   setSecInfoHeader(&secInfoHeader, &peData);

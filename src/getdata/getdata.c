@@ -193,7 +193,11 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
   // 0x18 == size of COFF header, get16BitFromPE value == size of optional header
   fseek(pe, peData->peHeaderOffset + 0x14, SEEK_SET);
   peData->headerSize = (peData->peHeaderOffset + 1) + 0x18 + get16BitFromPE(pe);
-  
+
+  // PE characteristics
+  fseek(pe, peData->peHeaderOffset + 0x16, SEEK_SET);
+  peData->characteristics = get16BitFromPE(pe);
+
   // Entry point (RVA)
   fseek(pe, peData->peHeaderOffset + 0x28, SEEK_SET);
   peData->entryPoint = get32BitFromPE(pe);
@@ -205,6 +209,14 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
   // Page alignment/size
   fseek(pe, peData->peHeaderOffset + 0x38, SEEK_SET);
   peData->pageSize = get32BitFromPE(pe);
+
+  // Export tables
+  fseek(pe, peData->peHeaderOffset + 0x78, SEEK_SET);
+  peData->peExportInfo.count = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
+
+  // Import tables
+  fseek(pe, peData->peHeaderOffset + 0x80, SEEK_SET);
+  peData->peImportInfo.count = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
 
   // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort)
   fseek(pe, peData->peHeaderOffset + 0xC0, SEEK_SET);

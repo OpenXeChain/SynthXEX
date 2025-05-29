@@ -35,8 +35,13 @@
 #define XEX_IMG_FLAG_4KIB_PAGES  0x10000000
 #define XEX_IMG_FLAG_REGION_FREE 0x20000000
 
+// PE characteristics flags
+#define PE_CHAR_FLAG_DLL 0x2000
+
 // Module flags
-#define XEX_MOD_FLAG_TITLE 0x00000001
+#define XEX_MOD_FLAG_TITLE   0x00000001
+#define XEX_MOD_FLAG_EXPORTS 0x00000002
+#define XEX_MOD_FLAG_DLL     0x00000008
 
 // Region flags
 #define XEX_REG_FLAG_REGION_FREE 0xFFFFFFFF
@@ -79,6 +84,16 @@ struct sectionPerms
   uint32_t rva;
 };
 
+struct peImportInfo
+{
+  uint16_t count;
+};
+
+struct peExportInfo
+{
+  uint16_t count;
+};
+
 // Data structs
 struct peData
 {
@@ -92,7 +107,10 @@ struct peData
   uint32_t sectionTableSize;
   uint32_t headerSize;
   uint32_t pageSize;
+  uint16_t characteristics;
   struct sections sections;
+  struct peImportInfo peImportInfo;
+  struct peExportInfo peExportInfo;
 };
 
 // Most of these are 8-byte aligned. Basefile is 4KiB aligned.
