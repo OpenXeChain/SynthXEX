@@ -25,10 +25,9 @@ SynthXEX is part of the FreeChainXenon toolchain. It's installer is located [her
 - A C compiler (GCC/Clang)
 - CMake (>= 3.25.1)
 - Make
-- GNU Nettle development libraries
 - Git
 
-To install these on Debian: ```sudo apt install gcc cmake make nettle-dev git```
+To install these on Debian: ```sudo apt install gcc cmake make git```
 
 ### Downloading
 
@@ -99,7 +98,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-### GNU Nettle (SHA1)
+### GNU Nettle (include/nettle/*)
 
 Copyright (C) 2001, 2013 Niels Möller
 

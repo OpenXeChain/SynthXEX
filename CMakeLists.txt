@@ -52,11 +52,17 @@ list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/write/writexex.c)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/getopt_port/getopt.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/getopt_port/getopt.c)
 
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/macros.h)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/nettle-types.h)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/nettle-write.h)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/sha1.h)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/sha1.c)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/sha1-compress.c)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/include/nettle/write-be32.c)
+
 # Setting compilation settings...
 add_executable(synthxex ${allsources})
 target_include_directories(synthxex PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(synthxex PRIVATE libnettle.a) # SynthXEX uses the nettle library for it's cryptography
-target_compile_options(synthxex PRIVATE -Wno-multichar) # Shut up the torrent of warnings from the endian check
 
 # If we're doing a debug build, compile with debugging and git commit hash
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
