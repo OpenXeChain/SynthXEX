@@ -24,10 +24,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   // XEX Header
 #ifdef LITTLE_ENDIAN_SYSTEM
   // Endian-swap XEX header before writing
-  xexHeader->moduleFlags = htonl(xexHeader->moduleFlags);
-  xexHeader->peOffset = htonl(xexHeader->peOffset);
-  xexHeader->secInfoOffset = htonl(xexHeader->secInfoOffset);
-  xexHeader->optHeaderCount = htonl(xexHeader->optHeaderCount);
+  xexHeader->moduleFlags = __builtin_bswap32(xexHeader->moduleFlags);
+  xexHeader->peOffset = __builtin_bswap32(xexHeader->peOffset);
+  xexHeader->secInfoOffset = __builtin_bswap32(xexHeader->secInfoOffset);
+  xexHeader->optHeaderCount = __builtin_bswap32(xexHeader->optHeaderCount);
 #endif
   
   fseek(xex, offsets->xexHeader, SEEK_SET);
@@ -38,8 +38,8 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   // Endian swap opt header entries
   for(uint32_t i = 0; i < optHeaderEntries->count; i++)
     {
-      optHeaderEntries->optHeaderEntry[i].id = htonl(optHeaderEntries->optHeaderEntry[i].id);
-      optHeaderEntries->optHeaderEntry[i].dataOrOffset = htonl(optHeaderEntries->optHeaderEntry[i].dataOrOffset);
+      optHeaderEntries->optHeaderEntry[i].id = __builtin_bswap32(optHeaderEntries->optHeaderEntry[i].id);
+      optHeaderEntries->optHeaderEntry[i].dataOrOffset = __builtin_bswap32(optHeaderEntries->optHeaderEntry[i].dataOrOffset);
     }
 #endif
 
@@ -58,7 +58,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   for(int i = 0; i < secInfoHeader->pageDescCount; i++)
     {
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = htonl(secInfoHeader->descriptors[i].sizeAndInfo);
+      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
 #endif
       
       // Writing out current descriptor...
@@ -87,16 +87,16 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
   // Endian-swap secinfo header
-  secInfoHeader->headerSize = htonl(secInfoHeader->headerSize);
-  secInfoHeader->peSize = htonl(secInfoHeader->peSize);
-  secInfoHeader->imageInfoSize = htonl(secInfoHeader->imageInfoSize);
-  secInfoHeader->imageFlags = htonl(secInfoHeader->imageFlags);
-  secInfoHeader->baseAddr = htonl(secInfoHeader->baseAddr);
-  secInfoHeader->importTableCount = htonl(secInfoHeader->importTableCount);
-  secInfoHeader->exportTableAddr = htonl(secInfoHeader->exportTableAddr);
-  secInfoHeader->gameRegion = htonl(secInfoHeader->gameRegion);
-  secInfoHeader->mediaTypes = htonl(secInfoHeader->mediaTypes);
-  secInfoHeader->pageDescCount = htonl(secInfoHeader->pageDescCount);
+  secInfoHeader->headerSize = __builtin_bswap32(secInfoHeader->headerSize);
+  secInfoHeader->peSize = __builtin_bswap32(secInfoHeader->peSize);
+  secInfoHeader->imageInfoSize = __builtin_bswap32(secInfoHeader->imageInfoSize);
+  secInfoHeader->imageFlags = __builtin_bswap32(secInfoHeader->imageFlags);
+  secInfoHeader->baseAddr = __builtin_bswap32(secInfoHeader->baseAddr);
+  secInfoHeader->importTableCount = __builtin_bswap32(secInfoHeader->importTableCount);
+  secInfoHeader->exportTableAddr = __builtin_bswap32(secInfoHeader->exportTableAddr);
+  secInfoHeader->gameRegion = __builtin_bswap32(secInfoHeader->gameRegion);
+  secInfoHeader->mediaTypes = __builtin_bswap32(secInfoHeader->mediaTypes);
+  secInfoHeader->pageDescCount = __builtin_bswap32(secInfoHeader->pageDescCount);
 #endif
 
   fseek(xex, offsets->secInfoHeader, SEEK_SET);
@@ -110,11 +110,11 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-      optHeaders->basefileFormat.size = htonl(optHeaders->basefileFormat.size);
-      optHeaders->basefileFormat.encType = htons(optHeaders->basefileFormat.encType);
-      optHeaders->basefileFormat.compType = htons(optHeaders->basefileFormat.compType);
-      optHeaders->basefileFormat.dataSize = htonl(optHeaders->basefileFormat.dataSize);
-      optHeaders->basefileFormat.zeroSize = htonl(optHeaders->basefileFormat.zeroSize);
+      optHeaders->basefileFormat.size = __builtin_bswap32(optHeaders->basefileFormat.size);
+      optHeaders->basefileFormat.encType = __builtin_bswap16(optHeaders->basefileFormat.encType);
+      optHeaders->basefileFormat.compType = __builtin_bswap16(optHeaders->basefileFormat.compType);
+      optHeaders->basefileFormat.dataSize = __builtin_bswap32(optHeaders->basefileFormat.dataSize);
+      optHeaders->basefileFormat.zeroSize = __builtin_bswap32(optHeaders->basefileFormat.zeroSize);
 #endif
       
       fwrite(&(optHeaders->basefileFormat), sizeof(uint8_t), sizeof(struct basefileFormat), xex);
@@ -127,7 +127,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       uint32_t importLibsSize = optHeaders->importLibraries.size; // Need to use this value, so save it before we endian-swap
       
 #ifdef LITTLE_ENDIAN_SYSTEM
-      optHeaders->importLibraries.size = htonl(optHeaders->importLibraries.size);
+      optHeaders->importLibraries.size = __builtin_bswap32(optHeaders->importLibraries.size);
 #endif
 
       fwrite(&(optHeaders->importLibraries.size), sizeof(uint8_t), 0x4, xex);
@@ -140,10 +140,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-      optHeaders->tlsInfo.slotCount = htonl(optHeaders->tlsInfo.slotCount);
-      optHeaders->tlsInfo.rawDataAddr = htonl(optHeaders->tlsInfo.rawDataAddr);
-      optHeaders->tlsInfo.dataSize = htonl(optHeaders->tlsInfo.dataSize);
-      optHeaders->tlsInfo.rawDataSize = htonl(optHeaders->tlsInfo.rawDataSize);
+      optHeaders->tlsInfo.slotCount = __builtin_bswap32(optHeaders->tlsInfo.slotCount);
+      optHeaders->tlsInfo.rawDataAddr = __builtin_bswap32(optHeaders->tlsInfo.rawDataAddr);
+      optHeaders->tlsInfo.dataSize = __builtin_bswap32(optHeaders->tlsInfo.dataSize);
+      optHeaders->tlsInfo.rawDataSize = __builtin_bswap32(optHeaders->tlsInfo.rawDataSize);
 #endif
 
       fwrite(&(optHeaders->tlsInfo), sizeof(uint8_t), sizeof(struct tlsInfo), xex);

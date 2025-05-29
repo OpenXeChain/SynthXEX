@@ -56,14 +56,14 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
 
       // For little endian systems, swap into big endian for hashing, then back (to keep struct endianness consistent)
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = htonl(secInfoHeader->descriptors[i].sizeAndInfo);
+      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
 #endif
       
       sha1_update(&shaContext, pageSize, page);
       sha1_update(&shaContext, 0x18, (uint8_t*)&secInfoHeader->descriptors[i]);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = ntohl(secInfoHeader->descriptors[i].sizeAndInfo);
+      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
 #endif
       
       if(i != 0)

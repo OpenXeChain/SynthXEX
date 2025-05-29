@@ -22,7 +22,7 @@
 #include "common.h"
 
 // Endian test
-#if 'AB' == 0b100000101000010
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_SYSTEM
 #else
 #define BIG_ENDIAN_SYSTEM

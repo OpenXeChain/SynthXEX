@@ -44,7 +44,7 @@ uint32_t get32BitFromPE(FILE *pe)
 
   // If system is big endian, swap endianness (PE is LE)
 #ifdef BIG_ENDIAN_SYSTEM
-  result = htonl(result);
+  result = __builtin_bswap32(result);
 #endif
   
   return result;
@@ -84,7 +84,7 @@ uint32_t get32BitFromXEX(FILE *xex)
 
   // If system and file endianness don't match we need to change it
 #ifdef LITTLE_ENDIAN_SYSTEM
-  result = ntohl(result);
+  result = __builtin_bswap32(result);
 #endif
   
   return result;
@@ -104,7 +104,7 @@ uint16_t get16BitFromXEX(FILE *xex)
 
   // If system and file endianness don't match we need to change it
 #ifdef LITTLE_ENDIAN_SYSTEM
-  result = ntohs(result);
+  result = __builtin_bswap16(result);
 #endif
   
   return result;
