@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <arpa/inet.h> // For endian-swapping
 #include "common.h"
 
 // Endian test
