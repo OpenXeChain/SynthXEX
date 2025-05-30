@@ -20,6 +20,12 @@
 cmake_minimum_required(VERSION 3.25.1)
 project(synthxex)
 
+# Make sure we're not being compiled with MSVC (we don't support it)
+if(MSVC)
+	message(SEND_ERROR "Compiling with MSVC is not supported. Please use GCC or Clang via the -DCMAKE_C_COMPILER flag or CC environment variable. (Example: cmake -DCMAKE_C_COMPILER=\"gcc\" ..).")
+	return()
+endif()
+
 # Setting sources...
 set(allsources ${CMAKE_SOURCE_DIR}/src/main.c)
 
@@ -66,8 +72,14 @@ target_include_directories(synthxex PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # If we're doing a debug build, compile with debugging and git commit hash
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
-	target_compile_options(synthxex PRIVATE -O0 -g -fsanitize=address)
-	target_link_options(synthxex PRIVATE -fsanitize=address)
+
+	# MinGW doesn't support ASAN
+	if(NOT (MINGW))
+		target_compile_options(synthxex PRIVATE -O0 -g -fsanitize=address)
+		target_link_options(synthxex PRIVATE -fsanitize=address)
+	else()
+		target_compile_options(synthxex PRIVATE -O0 -g)
+	endif()
 
 	execute_process(
 			COMMAND git rev-parse --short HEAD

@@ -12,7 +12,7 @@ This was developed by referencing public knowledge on the XEX(2) file format, al
 
 This is in early development and MANY features are missing (most notable imports/exports). No guarantees are made as to the functionality of the program, or it's stability. Functionality may change at any time.
 
-This *should* support any POSIX-compliant operating system. Windows is not supported at the moment (maybe WSL would work).
+This *should* support any POSIX-compliant operating system, along with Windows.
 
 ## Installing
 

@@ -245,6 +245,9 @@ int main(int argc, char **argv)
   struct optHeaderEntries optHeaderEntries;
   struct optHeaders optHeaders;
 
+	// Make sure the import library size is initially zero
+	optHeaders.importLibraries.size = 0;
+
   printf("%s Validating PE file...\n", PRINT_STEM);
   
   if(!validatePE(pe, skipMachineCheck))
