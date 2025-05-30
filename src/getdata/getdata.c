@@ -171,13 +171,6 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
       return ERR_UNKNOWN_DATA_REQUEST;
     }
   
-  // Get header data required for ANY XEX
-  // PE size
-  fseek(pe, 0, SEEK_SET); // If we don't do this, the size returned is wrong (?)
-  struct stat peStat;
-  fstat(fileno(pe), &peStat);
-  peData->size = peStat.st_size;
-  
   // Getting PE header offset before we go any further..
   fseek(pe, 0x3C, SEEK_SET);
   peData->peHeaderOffset = get32BitFromPE(pe);

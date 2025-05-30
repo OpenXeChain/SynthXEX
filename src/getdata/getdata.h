@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <sys/stat.h>
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
