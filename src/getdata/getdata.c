@@ -120,7 +120,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
   return true; // Checked enough, this is an Xbox 360 PE file
 }
 
-int getSectionRwxFlags(FILE *pe, struct sections *sections)
+int getSectionInfo(FILE *pe, struct sections *sections)
 {
   fseek(pe, 0x3C, SEEK_SET);
   uint32_t peOffset = get32BitFromPE(pe);
@@ -128,29 +128,32 @@ int getSectionRwxFlags(FILE *pe, struct sections *sections)
   fseek(pe, peOffset + 0x6, SEEK_SET); // 0x6 == section count
   sections->count = get16BitFromPE(pe);
   
-  sections->sectionPerms = calloc(sections->count, sizeof(struct sectionPerms)); // free() is called for this in setdata
-  if(sections->sectionPerms == NULL) {return ERR_OUT_OF_MEM;}
+  sections->section = calloc(sections->count, sizeof(struct section)); // free() is called for this in setdata
+  if(sections->section == NULL) {return ERR_OUT_OF_MEM;}
   fseek(pe, peOffset + 0xF8, SEEK_SET); // 0xF8 == beginning of section table
 
   for(uint16_t i = 0; i < sections->count; i++)
     {
-      fseek(pe, 0xC, SEEK_CUR); // Seek to RVA of section
-      sections->sectionPerms[i].rva = get32BitFromPE(pe);
+      fseek(pe, 0x8, SEEK_CUR); // Seek to virtual size of section
+      sections->section[i].virtualSize = get32BitFromPE(pe);
+      sections->section[i].rva = get32BitFromPE(pe);
+      sections->section[i].rawSize = get32BitFromPE(pe);
+      sections->section[i].offset = get32BitFromPE(pe);
 
-      fseek(pe, 0x14, SEEK_CUR); // Now progress to characteristics, where we will check flags
+      fseek(pe, 0xC, SEEK_CUR); // Now progress to characteristics, where we will check flags
       uint32_t characteristics = get32BitFromPE(pe);
 
       if(characteristics & PE_SECTION_FLAG_EXECUTE)
 	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
+	  sections->section[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
 	}
       else if(characteristics & PE_SECTION_FLAG_WRITE || characteristics & PE_SECTION_FLAG_DISCARDABLE)
 	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
+	  sections->section[i].permFlag = XEX_SECTION_RWDATA | 0b10000;
 	}
       else if(characteristics & PE_SECTION_FLAG_READ)
 	{
-	  sections->sectionPerms[i].permFlag = XEX_SECTION_RODATA | 0b10000;
+	  sections->section[i].permFlag = XEX_SECTION_RODATA | 0b10000;
 	}
       else
 	{
@@ -209,7 +212,7 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
 
   // Import tables
   fseek(pe, peData->peHeaderOffset + 0x80, SEEK_SET);
-  peData->peImportInfo.count = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
+  peData->peImportInfo.tableCount = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
 
   // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort)
   fseek(pe, peData->peHeaderOffset + 0xC0, SEEK_SET);
@@ -217,8 +220,8 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
   peData->tlsSize = get32BitFromPE(pe);
   if(peData->tlsAddr != 0 || peData->tlsSize != 0) {return ERR_UNSUPPORTED_STRUCTURE;}
 
-  // Page RWX flags
-  int ret = getSectionRwxFlags(pe, &(peData->sections));
+  // Section info
+  int ret = getSectionInfo(pe, &(peData->sections));
   if(ret != 0) {return ret;}
 
   return SUCCESS;

@@ -23,11 +23,11 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
   uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
   uint32_t currentOffset = page * pageSize;
   
-  for(int i = peData->sections.count - 1; i >= 0; i--)
+  for(int32_t i = peData->sections.count - 1; i >= 0; i--)
     {
-      if(currentOffset >= peData->sections.sectionPerms[i].rva)
+      if(currentOffset >= peData->sections.section[i].rva)
 	{
-	  return peData->sections.sectionPerms[i].permFlag;
+	  return peData->sections.section[i].permFlag;
 	}
     }
 
@@ -76,5 +76,5 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
 	}
     }
 
-  free(peData->sections.sectionPerms); // Alloc'd in getdata
+  free(peData->sections.section); // Alloc'd in getdata
 }

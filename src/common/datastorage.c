@@ -28,84 +28,76 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
   return offset; // Offset already aligned
 }
 
-// TODO: Combine all of these into a single function
+uint32_t rvaToOffset(uint32_t rva, struct sections *sections)
+{
+  for(int32_t i = sections->count - 1; i >= 0; i--)
+    {
+      if(rva >= sections->section[i].rva)
+	{
+	  return (rva - sections->section[i].rva) + sections->section[i].offset;
+	}
+    }
+}
+
+uint32_t offsetToRVA(uint32_t offset, struct sections *sections)
+{
+  for(int32_t i = sections->count - 1; i >= 0; i--)
+    {
+      if(offset >= sections->section[i].offset)
+	{
+	  return (offset - sections->section[i].offset) + sections->section[i].rva;
+	}
+    }
+}
 
 uint32_t get32BitFromPE(FILE *pe)
 {
-  uint8_t store[4];
-  fread(store, sizeof(uint8_t), 4, pe);
-  
-  uint32_t result = 0;
-
-  for(int i = 0; i < 4; i++)
-    {
-      result |= store[i] << i * 8;
-    }
+  uint32_t result;
+  fread(&result, sizeof(uint32_t), 1, pe);
 
   // If system is big endian, swap endianness (PE is LE)
 #ifdef BIG_ENDIAN_SYSTEM
-  result = __builtin_bswap32(result);
-#endif
-  
+  return __builtin_bswap32(result);
+#else
   return result;
+#endif
 }
 
 uint16_t get16BitFromPE(FILE *pe)
 {
-  uint8_t store[2];
-  fread(store, sizeof(uint8_t), 2, pe);
-  
-  uint16_t result = 0;
-
-  for(int i = 0; i < 2; i++)
-    {
-      result |= store[i] << i * 8;
-    }
+  uint16_t result;
+  fread(&result, sizeof(uint16_t), 1, pe);
 
   // If system is big endian, swap endianness (PE is LE)
 #ifdef BIG_ENDIAN_SYSTEM
-  result = htons(result);
-#endif
-  
+  return __builtin_bswap16(result);
+#else
   return result;
+#endif
 }
 
 uint32_t get32BitFromXEX(FILE *xex)
 {
-  uint8_t store[4];
-  fread(store, sizeof(uint8_t), 4, xex);
-  
-  uint32_t result = 0;
-
-  for(int i = 0; i < 4; i++)
-    {
-      result |= store[i] << i * 8;
-    }
+  uint32_t result;
+  fread(&result, sizeof(uint32_t), 1, xex);
 
   // If system and file endianness don't match we need to change it
 #ifdef LITTLE_ENDIAN_SYSTEM
-  result = __builtin_bswap32(result);
-#endif
-  
+  return __builtin_bswap32(result);
+#else  
   return result;
+#endif
 }
 
 uint16_t get16BitFromXEX(FILE *xex)
 {
-  uint8_t store[2];
-  fread(store, sizeof(uint8_t), 2, xex);
-  
-  uint32_t result = 0;
-
-  for(int i = 0; i < 2; i++)
-    {
-      result |= store[i] << i * 8;
-    }
+  uint16_t result;
+  fread(&result, sizeof(uint16_t), 1, xex);
 
   // If system and file endianness don't match we need to change it
 #ifdef LITTLE_ENDIAN_SYSTEM
-  result = __builtin_bswap16(result);
-#endif
-  
+  return __builtin_bswap16(result);
+#else
   return result;
+#endif
 }

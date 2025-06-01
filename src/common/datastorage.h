@@ -76,18 +76,39 @@
 struct sections
 {
   uint16_t count;
-  struct sectionPerms *sectionPerms;
+  struct section *section;
 };
 
-struct sectionPerms
+struct section
 {
   uint8_t permFlag;
+  uint32_t virtualSize;
   uint32_t rva;
+  uint32_t rawSize;
+  uint32_t offset;
+};
+
+struct peImport
+{
+  bool ordinal;
+  uint32_t iatAddr;
+  uint32_t branchStubAddr;
+};
+
+struct peImportTable
+{
+  char *name;
+  uint32_t importCount;
+  uint32_t branchStubCount;
+  struct peImport *imports;
 };
 
 struct peImportInfo
 {
-  uint16_t count;
+  uint32_t tableCount;
+  uint32_t totalImportCount;
+  uint32_t totalBranchStubCount;
+  struct peImportTable *tables;
 };
 
 struct peExportInfo
@@ -210,7 +231,9 @@ struct optHeaders
 
 uint32_t getNextAligned(uint32_t offset, uint32_t alignment);
 
-// TODO: combine these into a single function
+uint32_t rvaToOffset(uint32_t rva, struct sections *sections);
+uint32_t offsetToRVA(uint32_t offset, struct sections *sections);
+
 uint32_t get32BitFromPE(FILE *pe);
 uint16_t get16BitFromPE(FILE *pe);
 uint32_t get32BitFromXEX(FILE *xex);
