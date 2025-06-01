@@ -30,6 +30,12 @@ uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
 
 uint32_t rvaToOffset(uint32_t rva, struct sections *sections)
 {
+  if((sections->count > 0)
+     && (rva >= sections->section[sections->count - 1].rva + sections->section[sections->count - 1].virtualSize))
+    {
+      return 0; // Not found (beyond end of PE)
+    }
+  
   for(int32_t i = sections->count - 1; i >= 0; i--)
     {
       if(rva >= sections->section[i].rva)
@@ -37,10 +43,18 @@ uint32_t rvaToOffset(uint32_t rva, struct sections *sections)
 	  return (rva - sections->section[i].rva) + sections->section[i].offset;
 	}
     }
+
+  return 0; // Not found
 }
 
 uint32_t offsetToRVA(uint32_t offset, struct sections *sections)
 {
+  if((sections->count > 0)
+     && (offset >= sections->section[sections->count - 1].offset + sections->section[sections->count - 1].rawSize))
+    {
+      return 0; // Not found (beyond end of PE)
+    }
+  
   for(int32_t i = sections->count - 1; i >= 0; i--)
     {
       if(offset >= sections->section[i].offset)
@@ -48,6 +62,8 @@ uint32_t offsetToRVA(uint32_t offset, struct sections *sections)
 	  return (offset - sections->section[i].offset) + sections->section[i].rva;
 	}
     }
+
+  return 0; // Not found
 }
 
 uint32_t get32BitFromPE(FILE *pe)

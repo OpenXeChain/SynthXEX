@@ -37,6 +37,9 @@ list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/common/datastorage.c)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/getdata/getdata.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/getdata/getdata.c)
 
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/getdata/getimports.h)
+list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/getdata/getimports.c)
+
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/pemapper/pemapper.h)
 list(APPEND allsources ${CMAKE_SOURCE_DIR}/src/pemapper/pemapper.c)
 

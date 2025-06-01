@@ -67,6 +67,9 @@
 #define PE_SECTION_FLAG_READ        0x40000000
 #define PE_SECTION_FLAG_WRITE       0x80000000
 
+// PE import ordinal flag
+#define PE_IMPORT_ORDINAL_FLAG 0x80000000
+
 // RWX flags (XEX)
 #define XEX_SECTION_CODE   0x1
 #define XEX_SECTION_RWDATA 0x2
@@ -105,6 +108,7 @@ struct peImportTable
 
 struct peImportInfo
 {
+  uint32_t idtRVA;
   uint32_t tableCount;
   uint32_t totalImportCount;
   uint32_t totalBranchStubCount;

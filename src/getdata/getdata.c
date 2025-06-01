@@ -212,7 +212,7 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
 
   // Import tables
   fseek(pe, peData->peHeaderOffset + 0x80, SEEK_SET);
-  peData->peImportInfo.tableCount = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
+  peData->peImportInfo.idtRVA = get32BitFromPE(pe);
 
   // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort)
   fseek(pe, peData->peHeaderOffset + 0xC0, SEEK_SET);
