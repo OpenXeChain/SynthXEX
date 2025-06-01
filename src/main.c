@@ -20,6 +20,7 @@
 #include "common/datastorage.h"
 #include "pemapper/pemapper.h"
 #include "getdata/getdata.h"
+#include "getdata/getimports.h"
 #include "setdata/populateheaders.h"
 #include "setdata/pagedescriptors.h"
 #include "setdata/optheaders.h"
@@ -245,8 +246,8 @@ int main(int argc, char **argv)
   struct optHeaderEntries optHeaderEntries;
   struct optHeaders optHeaders;
 
-	// Make sure the import library size is initially zero
-	optHeaders.importLibraries.size = 0;
+  // Make sure the import library size is initially zero
+  optHeaders.importLibraries.size = 0;
 
   printf("%s Validating PE file...\n", PRINT_STEM);
   
@@ -302,6 +303,18 @@ int main(int argc, char **argv)
     }
 
   printf("%s Got header data from PE!\n", PRINT_STEM);
+
+  // Process imports
+  printf("%s Retrieving import data from PE...\n", PRINT_STEM);
+  ret = getImports(pe, &peData);
+
+  if(ret != SUCCESS)
+    {
+      printf("TEMPORARY ERROR HANDLING: IMPORT DATA FAILED: %d\n", ret);
+      exit(-1);
+    }
+  
+  printf("%s Got import data from PE!\n", PRINT_STEM);
   
   // Determine the path we should save the basefile at and open it.
   printf("%s Creating basefile from PE...\n", PRINT_STEM);

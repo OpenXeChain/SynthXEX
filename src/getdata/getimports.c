@@ -20,12 +20,15 @@
 
 int getImports(FILE *pe, struct peData *peData)
 {
+  // Make sure the peImportInfo struct is blank, except the IDT RVA
+  memset(&(peData->peImportInfo.tableCount), 0, sizeof(struct peImportInfo) - sizeof(uint32_t));
+  
   // If there is no IDT, just skip handling imports
   if(peData->peImportInfo.idtRVA == 0)
     {
       return SUCCESS;
     }
-
+  
   // Seek to the IDT and read the first entry
   uint32_t idtOffset = rvaToOffset(peData->peImportInfo.idtRVA, &(peData->sections));
   if(idtOffset == 0) {return ERR_INVALID_RVA_OR_OFFSET;}
@@ -35,15 +38,16 @@ int getImports(FILE *pe, struct peData *peData)
   if(currentIDT == NULL) {return ERR_OUT_OF_MEM;}
   uint32_t *blankIDT = calloc(5, sizeof(uint32_t)); // Blank IDT for comparisons
   if(blankIDT == NULL) {free(currentIDT); return ERR_OUT_OF_MEM;}
-  if(fread(currentIDT, 5, sizeof(uint32_t), pe) < 5) {return ERR_FILE_READ;}
-
+  if(fread(currentIDT, sizeof(uint32_t), 5, pe) < 5) {return ERR_FILE_READ;}
+  
   // While the IDT is not blank, process it
   for(uint32_t i = 0; memcmp(currentIDT, blankIDT, 5 * sizeof(uint32_t)) != 0; i++)
     {
       // Allocate space for the current table data
-      peData->peImportInfo.tableCount = i;
+      peData->peImportInfo.tableCount++;
       peData->peImportInfo.tables = realloc(peData->peImportInfo.tables, (i + 1) * sizeof(struct peImportTable));
       if(peData->peImportInfo.tables == NULL) {free(currentIDT); free(blankIDT); return ERR_OUT_OF_MEM;}
+      memset(&(peData->peImportInfo.tables[i]), 0, sizeof(struct peImportTable)); // Make sure it's blank
 
 #ifdef BIG_ENDIAN_SYSTEM
       // Byteswap the IDT fields
@@ -60,19 +64,23 @@ int getImports(FILE *pe, struct peData *peData)
       if(fseek(pe, tableNameOffset, SEEK_SET) != 0) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
 
       // Allocating is expensive, go 16 bytes at a time to avoid calling realloc an excessive number of times
-      peData->peImportInfo.tables[i].name = calloc(16, sizeof(char));
-      if(peData->peImportInfo.tables[i].name == NULL) {free(currentIDT); free(blankIDT); return ERR_OUT_OF_MEM;}
-      if(fread(peData->peImportInfo.tables[i].name, 15, sizeof(char), pe) < 15) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
-      peData->peImportInfo.tables[i].name[15] = '\0';
-
-      // Use strlen to determine whether the string ends short of the buffer. If it does, we have the name.
-      for(uint32_t j = 15; strlen(peData->peImportInfo.tables[i].name) != j; j += 16)
+      for(uint32_t j = 0;; j += 16)
 	{
-	  peData->peImportInfo.tables[i].name = realloc(peData->peImportInfo.tables[i].name, ((j + 1) + 16) * sizeof(char));
+	  peData->peImportInfo.tables[i].name = realloc(peData->peImportInfo.tables[i].name, (j + 16) * sizeof(char));
 	  if(peData->peImportInfo.tables[i].name == NULL) {free(currentIDT); free(blankIDT); return ERR_OUT_OF_MEM;}
-	  if(fread(&(peData->peImportInfo.tables[i].name[j]), 15, sizeof(char), pe) < 15) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
-	  peData->peImportInfo.tables[i].name[j + 16] = '\0';
+	  if(fread(peData->peImportInfo.tables[i].name + j, sizeof(char), 16, pe) < 16) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
+
+	  // Check for a null terminator
+	  for(uint32_t k = j; k < j + 16; k++)
+	    {
+	      if(peData->peImportInfo.tables[i].name[k] == '\0')
+		{
+		  goto doneGettingTableName;
+		}
+	    }
 	}
+
+    doneGettingTableName:
 
       // Seek to the IAT and read the first entry
       uint32_t iatOffset = rvaToOffset(currentIDT[4], &(peData->sections));
@@ -80,7 +88,7 @@ int getImports(FILE *pe, struct peData *peData)
       if(fseek(pe, iatOffset, SEEK_SET) != 0) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
 
       uint32_t currentImport;
-      if(fread(&currentImport, 1, sizeof(uint32_t), pe) < 1) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
+      if(fread(&currentImport, sizeof(uint32_t), 1, pe) < 1) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
       
       // While the import is not blank, process it
       for(int j = 0; currentImport != 0; j++)
@@ -91,7 +99,7 @@ int getImports(FILE *pe, struct peData *peData)
 #endif
 	  
 	  // Allocate space for the current import
-	  peData->peImportInfo.tables[i].importCount = j;
+	  peData->peImportInfo.tables[i].importCount++;
 	  peData->peImportInfo.tables[i].imports = realloc(peData->peImportInfo.tables[i].imports, (j + 1) * sizeof(struct peImport));
 	  peData->peImportInfo.tables[i].imports[j].branchStubAddr = 0; // Make sure this is zeroed, we rely on it later
 
@@ -113,7 +121,7 @@ int getImports(FILE *pe, struct peData *peData)
 	  peData->peImportInfo.tables[i].imports[j].iatAddr = peData->baseAddr + currentImportRVA;
 
 	  // Read the next import
-	  if(fread(&currentImport, 1, sizeof(uint32_t), pe) < 1) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
+	  if(fread(&currentImport, sizeof(uint32_t), 1, pe) < 1) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
 	}
 
       // Add table's import count to total and return to the next IDT entry to read
@@ -121,7 +129,7 @@ int getImports(FILE *pe, struct peData *peData)
       if(fseek(pe, savedOffset, SEEK_SET) != 0) {free(currentIDT); free(blankIDT); return ERR_FILE_READ;}
 
       // Read next IDT
-      if(fread(currentIDT, 5, sizeof(uint32_t), pe) < 5) {return ERR_FILE_READ;}
+      if(fread(currentIDT, sizeof(uint32_t), 5, pe) < 5) {return ERR_FILE_READ;}
     }
   
   free(currentIDT);
