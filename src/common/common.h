@@ -26,7 +26,7 @@
 
 // Program identifiers
 #define NAME "SynthXEX"
-#define VERSION "v0.0.3"
+#define VERSION "v0.0.4"
 #define COPYRIGHT "2024-25"
 
 #ifdef GIT_COMMIT
