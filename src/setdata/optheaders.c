@@ -78,4 +78,6 @@ int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, st
   #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
   setSysFlags(&(optHeaderEntries->optHeaderEntry[3].dataOrOffset));
   #pragma GCC diagnostic pop
+
+  return SUCCESS;
 }

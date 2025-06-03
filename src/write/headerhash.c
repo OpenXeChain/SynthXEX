@@ -51,7 +51,7 @@ void setImportsSha1(FILE *xex)
 
 // So, it would probably be more sensible to endian-swap all of the data back and determine which structure is where
 // to determine the hash, but reading the file we just created is easier.
-void setHeaderSha1(FILE *xex)
+int setHeaderSha1(FILE *xex)
 {
   fseek(xex, 0x8, SEEK_SET); // Basefile offset
   uint32_t basefileOffset = get32BitFromXEX(xex);
@@ -85,4 +85,6 @@ void setHeaderSha1(FILE *xex)
   // Finally, write it out
   fseek(xex, secInfoOffset + 0x164, SEEK_SET); // 0x164 == offset in secinfo of header hash
   fwrite(headerHash, sizeof(uint8_t), 20, xex);
+
+  return SUCCESS;
 }

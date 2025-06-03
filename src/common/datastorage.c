@@ -34,6 +34,11 @@ void nullAndFree(void **ptr)
 // They can also be called individually, and it doesn't matter if you call them twice.
 // Each function checks if the struct going to be accessed is NULL, so it doesn't try
 // to access unallocated data.
+//
+// DO NOT CALL THESE OUTWITH MAIN. Those which take double pointers will replace
+// the pointer given to them with null ONLY in the function they're called in, not it's callers
+// (including main), which WILL result in a double free.
+//
 // Even if it doesn't access data right now, it's still there so it's not forgotten
 // about if it becomes necessary with future additions.
 void freeOffsetsStruct(struct offsets **offsets)

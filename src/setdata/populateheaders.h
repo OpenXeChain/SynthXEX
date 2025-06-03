@@ -21,5 +21,5 @@
 #include "../common/common.h"
 #include "../common/datastorage.h"
 
-void setXEXHeader(struct xexHeader *xexHeader, struct peData *peData);
-void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData);
+int setXEXHeader(struct xexHeader *xexHeader, struct peData *peData);
+int setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData);

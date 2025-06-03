@@ -76,5 +76,5 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
 	}
     }
 
-  freeSectionsStruct(&(peData->sections));
+  return SUCCESS;
 }

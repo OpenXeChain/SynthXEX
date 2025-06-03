@@ -18,7 +18,7 @@
 
 #include "populateheaders.h"
 
-void setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
+int setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
 {
   // Writing data into XEX header.
   strcpy(xexHeader->magic, "XEX2"); // Magic
@@ -41,9 +41,11 @@ void setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
     }
   
   xexHeader->optHeaderCount = 0x4; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
+
+  return SUCCESS;
 }
 
-void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
+int setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
 {
   // Writing data into security info header (much of this is derived from info in PE)
   secInfoHeader->peSize = peData->size;
@@ -63,4 +65,6 @@ void setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData
   secInfoHeader->mediaTypes = 0xFFFFFFFF; // All flags set, can load from any type.
   secInfoHeader->pageDescCount = secInfoHeader->peSize / peData->pageSize; // Number of page descriptors following security info (same number of pages)
   secInfoHeader->headerSize = (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor)) + (sizeof(struct secInfoHeader) - sizeof(void*)); // Page descriptor total size + length of rest of secinfo header (subtraction of sizeof void* is to remove pointer at end of struct from calculation)
+
+  return SUCCESS;
 }

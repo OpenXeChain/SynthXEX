@@ -16,6 +16,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// TODO: Harden all functions against bad data, unallocated data (check for NULL), etc.
+// Some functions are not robust as I wanted things up and running as quickly as possible.
+
 #include "common/common.h"
 #include "common/datastorage.h"
 #include "pemapper/pemapper.h"
@@ -246,15 +249,14 @@ int main(int argc, char **argv)
   struct optHeaderEntries *optHeaderEntries = calloc(1, sizeof(struct optHeaderEntries));
   struct optHeaders *optHeaders = calloc(1, sizeof(struct optHeaders));
 
-  if(offsets == NULL
-     || xexHeader == NULL
-     || secInfoHeader == NULL
-     || peData == NULL
-     || optHeaderEntries == NULL
-     || optHeaders == NULL)
+  if(offsets == NULL || xexHeader == NULL || secInfoHeader == NULL || peData == NULL
+     || optHeaderEntries == NULL || optHeaders == NULL)
     {
-      // Don't bother freeing right now, errors will have their own function soon
-      printf("%s ERROR: Out of memory\n", PRINT_STEM);
+      printf("%s ERROR: Out of memory. Aborting\n", PRINT_STEM);
+      nullAndFree((void**)&xexfilePath);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(pe);
+      fclose(xex);
       return -1;
     }
   
@@ -275,38 +277,36 @@ int main(int argc, char **argv)
   // Reading in header data from PE
   printf("%s Retrieving header data from PE...\n", PRINT_STEM);
   ret = getHdrData(pe, peData, 0);
-  
-  if(ret == ERR_UNKNOWN_DATA_REQUEST)
+
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
-      fclose(pe);
-      fclose(xex);
-      return -1;
-    }
-  else if(ret == ERR_FILE_READ)
-    {
-      printf("%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
-      fclose(pe);
-      fclose(xex);
-      return -1;
-    }
-  else if(ret == ERR_OUT_OF_MEM)
-    {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-      fclose(pe);
-      fclose(xex);
-      return -1;
-    }
-  else if(ret == ERR_MISSING_SECTION_FLAG)
-    {
-      printf("%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
-      fclose(pe);
-      fclose(xex);
-      return -1;
-    }
-  else if(ret == ERR_UNSUPPORTED_STRUCTURE)
-    {
-      printf("%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_UNKNOWN_DATA_REQUEST)
+	{
+	  printf("%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_FILE_READ)
+	{
+	  printf("%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_MISSING_SECTION_FLAG)
+	{
+	  printf("%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_UNSUPPORTED_STRUCTURE)
+	{
+	  printf("%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+
+      nullAndFree((void**)&xexfilePath);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -320,8 +320,32 @@ int main(int argc, char **argv)
 
   if(ret != SUCCESS)
     {
-      printf("TEMPORARY ERROR HANDLING: IMPORT DATA FAILED: %d\n", ret);
-      exit(-1);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_FILE_READ)
+	{
+	  printf("%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_INVALID_RVA_OR_OFFSET)
+	{
+	  printf("%s ERROR: Invalid RVA or offset encountered (malformed PE). Aborting.\n", PRINT_STEM);
+	}
+      else if(ret == ERR_UNSUPPORTED_STRUCTURE) // Does import by name actually need special treatment or can this go??
+	{
+	  printf("%s ERROR: Import by name detected. This is currently unsupported. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+
+      nullAndFree((void**)&xexfilePath);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(pe);
+      fclose(xex);
+      return -1;
     }
   
   printf("%s Got import data from PE!\n", PRINT_STEM);
@@ -333,6 +357,7 @@ int main(int argc, char **argv)
   if(basefilePath == NULL)
     {
       printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       nullAndFree((void**)&xexfilePath);
       fclose(pe);
       fclose(xex);
@@ -349,6 +374,7 @@ int main(int argc, char **argv)
   if(basefile == NULL)
     {
       printf("%s ERROR: Could not create basefile. Do you have write permission? Aborting.\n", PRINT_STEM);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -358,9 +384,18 @@ int main(int argc, char **argv)
   ret = mapPEToBasefile(pe, basefile, peData);
   fclose(pe);
 
-  if(ret == ERR_OUT_OF_MEM)
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);
       return -1;
@@ -370,52 +405,115 @@ int main(int argc, char **argv)
   
   // Setting final XEX data structs
   printf("%s Building XEX header...\n", PRINT_STEM);
-  setXEXHeader(xexHeader, peData);
+  ret = setXEXHeader(xexHeader, peData);
+
+  if(ret != SUCCESS)
+    {
+      printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
   
   printf("%s Building security header...\n", PRINT_STEM);
-  setSecInfoHeader(secInfoHeader, peData);
+  ret = setSecInfoHeader(secInfoHeader, peData);
+
+  if(ret != SUCCESS)
+    {
+      printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
   
   printf("%s Setting page descriptors...\n", PRINT_STEM);
   ret = setPageDescriptors(basefile, peData, secInfoHeader);
 
-  if(ret == ERR_OUT_OF_MEM)
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);
       return -1;
     }
+
+  // Done with this now
+  freeSectionsStruct(&(peData->sections));
   
   printf("%s Building optional headers...\n", PRINT_STEM);
   ret = setOptHeaders(secInfoHeader, peData, optHeaderEntries, optHeaders);
 
-  if(ret == ERR_OUT_OF_MEM)
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+      
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);
       return -1;
     }
+
+  // Done with this now
+  freePeImportInfoStruct(&(peData->peImportInfo));
   
   // Setting data positions...
   printf("%s Aligning data...\n", PRINT_STEM);
   ret = placeStructs(offsets, xexHeader, optHeaderEntries, secInfoHeader, optHeaders);
 
-  if(ret == ERR_OUT_OF_MEM)
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+      
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);
       return -1;
     }
-  
+
+  // We're done with this now
+  freePeDataStruct(&peData);
+
   // Write out all of the XEX data to file
   printf("%s Writing data to XEX file...\n", PRINT_STEM);
   ret = writeXEX(xexHeader, optHeaderEntries, secInfoHeader, optHeaders, offsets, basefile, xex);
-  
-  if(ret == ERR_OUT_OF_MEM)
+
+  if(ret != SUCCESS)
     {
-      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+      if(ret == ERR_OUT_OF_MEM)
+	{
+	  printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+	}
+      else
+	{
+	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+	}
+      
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);
       return -1;
@@ -425,7 +523,17 @@ int main(int argc, char **argv)
 
   // Final pass (sets & writes header hash)
   printf("%s Calculating and writing header SHA1...\n", PRINT_STEM);
-  setHeaderSha1(xex);
+  ret = setHeaderSha1(xex);
+
+  if(ret != SUCCESS)
+    {
+      printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
+
   printf("%s Header SHA1 written!\n", PRINT_STEM);
   
   fclose(basefile);

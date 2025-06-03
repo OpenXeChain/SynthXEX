@@ -239,6 +239,9 @@ void nullAndFree(void **ptr);
 
 // These functions together handle freeing all of the main structs.
 // They can also be called individually, and it doesn't matter if you call them twice.
+// DO NOT CALL THESE OUTWITH MAIN. Those which take double pointers will replace
+// the pointer given to them with null ONLY in the function they're called in, not it's callers
+// (including main), which WILL result in a double free.
 void freeOffsetsStruct(struct offsets **offsets);
 void freeXexHeaderStruct(struct xexHeader **xexHeader);
 void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader);
