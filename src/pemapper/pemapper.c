@@ -81,8 +81,8 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
   peData->size = ftell(basefile);
   
   // We're done with these, free them
-  free(buffer);
-  free(sectionInfo);
+  nullAndFree((void**)&buffer);
+  nullAndFree((void**)&sectionInfo);
 
   return SUCCESS;
 }

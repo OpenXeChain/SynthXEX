@@ -37,7 +37,7 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
 int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
 {
   uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
-  secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor)); // The free() for this is called after written to XEX
+  secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor));
   if(secInfoHeader->descriptors == NULL) {return ERR_OUT_OF_MEM;}
   
   // Setting size/info data and calculating hashes for page descriptors
@@ -76,5 +76,5 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
 	}
     }
 
-  free(peData->sections.section); // Alloc'd in getdata
+  freeSectionsStruct(&(peData->sections));
 }

@@ -24,6 +24,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+// Forbid the use of the free function
+#define freeOnlyUseThisFunctionInTheNullAndFreeFunctionNowhereElse free
+#pragma GCC poison free
+
 // Program identifiers
 #define NAME "SynthXEX"
 #define VERSION "v0.0.4"

@@ -231,6 +231,25 @@ struct optHeaders
   struct tlsInfo tlsInfo;
 };
 
+// Functions used for easier memory management
+
+// Frees memory and sets the pointer to NULL
+// If the pointer is currently NULL, do nothing (avoid double-free)
+void nullAndFree(void **ptr);
+
+// These functions together handle freeing all of the main structs.
+// They can also be called individually, and it doesn't matter if you call them twice.
+void freeOffsetsStruct(struct offsets **offsets);
+void freeXexHeaderStruct(struct xexHeader **xexHeader);
+void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader);
+void freeSectionsStruct(struct sections *sections);
+void freePeImportInfoStruct(struct peImportInfo *peImportInfo);
+void freePeDataStruct(struct peData **peData);
+void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries);
+void freeOptHeadersStruct(struct optHeaders **optHeaders);
+void freeAllMainStructs(struct offsets **offsets, struct xexHeader **xexHeader, struct secInfoHeader **secInfoHeader,
+			struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders);
+
 // Functions used for file data manipulation
 
 uint32_t getNextAligned(uint32_t offset, uint32_t alignment);

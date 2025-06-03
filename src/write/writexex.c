@@ -1,7 +1,7 @@
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
-// Copyright (c) 2024 Aiden Isik
+// Copyright (c) 2024-25 Aiden Isik
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -50,8 +50,6 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex);
     }
 
-  free(optHeaderEntries->optHeaderEntry); // Alloc'd in setdata (optheaders). Now we're done with it.
-  
   // Page descriptors
   fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void*), SEEK_SET);
   
@@ -65,8 +63,6 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fwrite(&(secInfoHeader->descriptors[i].sizeAndInfo), sizeof(uint32_t), 0x1, xex);
       fwrite(secInfoHeader->descriptors[i].sha1, sizeof(uint8_t), 0x14, xex);
     }
-
-  free(secInfoHeader->descriptors); // calloc'd elsewhere, freeing now
 
   // Basefile
   fseek(pe, 0x0, SEEK_SET);
@@ -82,7 +78,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fwrite(buffer, sizeof(uint8_t), readBufSize, xex);
     }
 
-  free(buffer);
+  nullAndFree((void**)&buffer);
   
   // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -148,7 +144,6 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
       fwrite(&(optHeaders->tlsInfo), sizeof(uint8_t), sizeof(struct tlsInfo), xex);
     }
-  
-  free(offsets->optHeaders); // Alloc'd in placer.
+
   return SUCCESS;
 }

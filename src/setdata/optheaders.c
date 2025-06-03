@@ -70,5 +70,12 @@ int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, st
 
   // Fifth optional header (system flags)
   optHeaderEntries->optHeaderEntry[3].id = XEX_OPT_ID_SYS_FLAGS;
+
+  // We're using the name of the first element of the struct for clarity,
+  // it can never be an unaligned access, so ignore that warning.
+  // Also works for Clang.
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
   setSysFlags(&(optHeaderEntries->optHeaderEntry[3].dataOrOffset));
+  #pragma GCC diagnostic pop
 }

@@ -18,6 +18,116 @@
 
 #include "datastorage.h"
 
+// Frees memory and sets the pointer to NULL
+// If the pointer is currently NULL, do nothing (avoid double-free)
+// Disable pointer type checking here to make this easier to use
+void nullAndFree(void **ptr)
+{
+  if(*ptr != NULL)
+    {
+      freeOnlyUseThisFunctionInTheNullAndFreeFunctionNowhereElse(*ptr);
+      *ptr = NULL;
+    }
+}
+
+// These functions together handle freeing all of the main structs.
+// They can also be called individually, and it doesn't matter if you call them twice.
+// Each function checks if the struct going to be accessed is NULL, so it doesn't try
+// to access unallocated data.
+// Even if it doesn't access data right now, it's still there so it's not forgotten
+// about if it becomes necessary with future additions.
+void freeOffsetsStruct(struct offsets **offsets)
+{
+  if(*offsets != NULL)
+    {
+      nullAndFree((void**)&((*offsets)->optHeaders));
+      nullAndFree((void**)offsets);
+    }
+}
+
+void freeXexHeaderStruct(struct xexHeader **xexHeader)
+{
+  if(*xexHeader != NULL)
+    {
+      nullAndFree((void**)xexHeader);
+    }
+}
+
+void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader)
+{
+  if(*secInfoHeader != NULL)
+    {
+      // Ignore the unaligned pointer warning here, every field before descriptors is a multiple of 8.
+      // Also works for Clang.
+      #pragma GCC diagnostic push
+      #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+      nullAndFree((void**)&((*secInfoHeader)->descriptors));
+      #pragma GCC diagnostic pop
+      
+      nullAndFree((void**)secInfoHeader);
+    }
+}
+
+void freeSectionsStruct(struct sections *sections)
+{
+  nullAndFree((void**)&(sections->section));
+}
+
+void freePeImportInfoStruct(struct peImportInfo *peImportInfo)
+{
+  if(peImportInfo->tables != NULL)
+    {
+      // Free the imports within each table first, then the tables,
+      // otherwise we'll have a memory leak
+      for(uint32_t i = 0; i < peImportInfo->tableCount; i++)
+	{
+	  nullAndFree((void**)&(peImportInfo->tables[i].name));
+	  nullAndFree((void**)&(peImportInfo->tables[i].imports));
+	}
+
+      nullAndFree((void**)&(peImportInfo->tables));
+    }
+}
+
+ 
+void freePeDataStruct(struct peData **peData)
+{
+  if(*peData != NULL)
+    {
+      freeSectionsStruct(&((*peData)->sections));
+      freePeImportInfoStruct(&((*peData)->peImportInfo));
+      nullAndFree((void**)peData);
+    }
+}
+
+void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries)
+{
+  if(*optHeaderEntries != NULL)
+    {
+      nullAndFree((void**)&((*optHeaderEntries)->optHeaderEntry));
+      nullAndFree((void**)optHeaderEntries);
+    }
+}
+
+void freeOptHeadersStruct(struct optHeaders **optHeaders)
+{
+  if(*optHeaders != NULL)
+    {
+      nullAndFree((void**)optHeaders);
+    }
+}
+
+void freeAllMainStructs(struct offsets **offsets, struct xexHeader **xexHeader, struct secInfoHeader **secInfoHeader,
+		    struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders)
+{
+  freeOffsetsStruct(offsets);
+  freeXexHeaderStruct(xexHeader);
+  freeSecInfoHeaderStruct(secInfoHeader);
+  freePeDataStruct(peData);
+  freeOptHeaderEntriesStruct(optHeaderEntries);
+  freeOptHeadersStruct(optHeaders);
+}
+
 uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
 {
   if(offset % alignment) // If offset not aligned

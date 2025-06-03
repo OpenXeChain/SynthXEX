@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 	  if(pePath == NULL)
 	    {
 	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-	      if(xexfilePath != NULL) {free(xexfilePath);}
+	      if(xexfilePath != NULL) {nullAndFree((void**)&xexfilePath);}
 	      return -1;
 	    }
 	  
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	  if(xexfilePath == NULL)
 	    {
 	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-	      if(pePath != NULL) {free(pePath);}
+	      if(pePath != NULL) {nullAndFree((void**)&pePath);}
 	      return -1;
 	    }
 	  
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     {
       if(gotOutput)
 	{
-	  free(xexfilePath);
+	  nullAndFree((void**)&xexfilePath);
 	}
       
       printf("%s ERROR: PE input expected but not found. Aborting.\n", PRINT_STEM);
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
     {
       if(gotInput)
 	{
-	  free(pePath);
+	  nullAndFree((void**)&pePath);
 	}
 
       printf("%s ERROR: XEX file output expected but not found. Aborting.\n", PRINT_STEM);
@@ -216,12 +216,12 @@ int main(int argc, char **argv)
   if(pe == NULL)
     {
       printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", PRINT_STEM);
-      free(pePath);
-      free(xexfilePath);
+      nullAndFree((void**)&pePath);
+      nullAndFree((void**)&xexfilePath);
       return -1;
     }
 
-  free(pePath);
+  nullAndFree((void**)&pePath);
   
   FILE *xex = fopen(xexfilePath, "wb+");
 
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     {
       printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", PRINT_STEM);
       fclose(pe);
-      free(xexfilePath);
+      nullAndFree((void**)&xexfilePath);
       return -1;
     }
 
@@ -239,22 +239,32 @@ int main(int argc, char **argv)
 
   int ret;
   
-  struct offsets offsets;
-  struct xexHeader xexHeader;
-  struct secInfoHeader secInfoHeader;
-  struct peData peData;
-  struct optHeaderEntries optHeaderEntries;
-  struct optHeaders optHeaders;
+  struct offsets *offsets = calloc(1, sizeof(struct offsets));
+  struct xexHeader *xexHeader = calloc(1, sizeof(struct xexHeader));
+  struct secInfoHeader *secInfoHeader = calloc(1, sizeof(struct secInfoHeader));
+  struct peData *peData = calloc(1, sizeof(struct peData));
+  struct optHeaderEntries *optHeaderEntries = calloc(1, sizeof(struct optHeaderEntries));
+  struct optHeaders *optHeaders = calloc(1, sizeof(struct optHeaders));
 
-  // Make sure the import library size is initially zero
-  optHeaders.importLibraries.size = 0;
-
+  if(offsets == NULL
+     || xexHeader == NULL
+     || secInfoHeader == NULL
+     || peData == NULL
+     || optHeaderEntries == NULL
+     || optHeaders == NULL)
+    {
+      // Don't bother freeing right now, errors will have their own function soon
+      printf("%s ERROR: Out of memory\n", PRINT_STEM);
+      return -1;
+    }
+  
   printf("%s Validating PE file...\n", PRINT_STEM);
   
   if(!validatePE(pe, skipMachineCheck))
     {
       printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", PRINT_STEM);
-      free(xexfilePath);
+      nullAndFree((void**)&xexfilePath);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -264,7 +274,7 @@ int main(int argc, char **argv)
 
   // Reading in header data from PE
   printf("%s Retrieving header data from PE...\n", PRINT_STEM);
-  ret = getHdrData(pe, &peData, 0);
+  ret = getHdrData(pe, peData, 0);
   
   if(ret == ERR_UNKNOWN_DATA_REQUEST)
     {
@@ -306,7 +316,7 @@ int main(int argc, char **argv)
 
   // Process imports
   printf("%s Retrieving import data from PE...\n", PRINT_STEM);
-  ret = getImports(pe, &peData);
+  ret = getImports(pe, peData);
 
   if(ret != SUCCESS)
     {
@@ -323,7 +333,7 @@ int main(int argc, char **argv)
   if(basefilePath == NULL)
     {
       printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-      free(xexfilePath);
+      nullAndFree((void**)&xexfilePath);
       fclose(pe);
       fclose(xex);
       return -1;
@@ -333,8 +343,8 @@ int main(int argc, char **argv)
   strcat(basefilePath, ".basefile");
   
   FILE* basefile = fopen(basefilePath, "wb+");
-  free(xexfilePath); // *Now* we're done with it.
-  free(basefilePath);
+  nullAndFree((void**)&xexfilePath); // *Now* we're done with it.
+  nullAndFree((void**)&basefilePath);
   
   if(basefile == NULL)
     {
@@ -345,7 +355,7 @@ int main(int argc, char **argv)
     }
 
   // Map the PE into the basefile (RVAs become offsets)
-  ret = mapPEToBasefile(pe, basefile, &peData);
+  ret = mapPEToBasefile(pe, basefile, peData);
   fclose(pe);
 
   if(ret == ERR_OUT_OF_MEM)
@@ -360,13 +370,13 @@ int main(int argc, char **argv)
   
   // Setting final XEX data structs
   printf("%s Building XEX header...\n", PRINT_STEM);
-  setXEXHeader(&xexHeader, &peData);
+  setXEXHeader(xexHeader, peData);
   
   printf("%s Building security header...\n", PRINT_STEM);
-  setSecInfoHeader(&secInfoHeader, &peData);
+  setSecInfoHeader(secInfoHeader, peData);
   
   printf("%s Setting page descriptors...\n", PRINT_STEM);
-  ret = setPageDescriptors(basefile, &peData, &secInfoHeader);
+  ret = setPageDescriptors(basefile, peData, secInfoHeader);
 
   if(ret == ERR_OUT_OF_MEM)
     {
@@ -377,7 +387,7 @@ int main(int argc, char **argv)
     }
   
   printf("%s Building optional headers...\n", PRINT_STEM);
-  ret = setOptHeaders(&secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+  ret = setOptHeaders(secInfoHeader, peData, optHeaderEntries, optHeaders);
 
   if(ret == ERR_OUT_OF_MEM)
     {
@@ -389,7 +399,7 @@ int main(int argc, char **argv)
   
   // Setting data positions...
   printf("%s Aligning data...\n", PRINT_STEM);
-  ret = placeStructs(&offsets, &xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders);
+  ret = placeStructs(offsets, xexHeader, optHeaderEntries, secInfoHeader, optHeaders);
 
   if(ret == ERR_OUT_OF_MEM)
     {
@@ -401,7 +411,7 @@ int main(int argc, char **argv)
   
   // Write out all of the XEX data to file
   printf("%s Writing data to XEX file...\n", PRINT_STEM);
-  ret = writeXEX(&xexHeader, &optHeaderEntries, &secInfoHeader, &optHeaders, &offsets, basefile, xex);
+  ret = writeXEX(xexHeader, optHeaderEntries, secInfoHeader, optHeaders, offsets, basefile, xex);
   
   if(ret == ERR_OUT_OF_MEM)
     {
@@ -422,5 +432,8 @@ int main(int argc, char **argv)
   fclose(xex);
   
   printf("%s XEX built. Have a nice day!\n\n", PRINT_STEM);
+
+  // Free everything left and exit
+  freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
   return SUCCESS;
 }
