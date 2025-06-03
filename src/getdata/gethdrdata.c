@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "getdata.h"
+#include "gethdrdata.h"
 
 // Validate PE. This isn't thorough, but it's enough to catch any non-PE/360 files.
 // I was considering merging this with getHdrData and mapPEToBasefile as we're
