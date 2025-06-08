@@ -19,6 +19,7 @@
 #pragma once
 
 #include "../common/common.h"
+#include "../common/crypto.h"
 #include "../common/datastorage.h"
 
 int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders);

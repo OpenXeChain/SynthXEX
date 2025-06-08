@@ -52,5 +52,7 @@
 #define ERR_OUT_OF_MEM -5
 #define ERR_UNSUPPORTED_STRUCTURE -6
 #define ERR_INVALID_RVA_OR_OFFSET -7
+#define ERR_INVALID_IMPORT_NAME -8
+#define ERR_DATA_OVERFLOW -9
 
 void infoPrint(char *str);

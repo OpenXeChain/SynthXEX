@@ -117,6 +117,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       currentHeader++;
     }
 
+  /*
   if(optHeaders->importLibraries.size != 0)
     {
       fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
@@ -130,6 +131,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fwrite(optHeaders->importLibraries.data, sizeof(uint8_t), importLibsSize - 0x4, xex);
       currentHeader++;
     }
+  */
 
   if(optHeaders->tlsInfo.slotCount != 0)
     {

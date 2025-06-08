@@ -198,10 +198,26 @@ struct __attribute__((packed)) basefileFormat
   uint32_t zeroSize;
 };
 
+struct __attribute__((packed)) importTable
+{
+  uint32_t size;
+  uint8_t sha1[0x14];
+  uint32_t unknown; // Unique to each executable imported from, and always the same
+  uint32_t targetVer;
+  uint32_t minimumVer;
+  uint8_t padding;
+  uint8_t tableIndex;
+  uint16_t addressCount;
+  uint32_t *addresses; // IAT entry address followed by branch stub code address for functions, just IAT address for other symbols
+};
+
 struct __attribute__((packed)) importLibraries
 {
   uint32_t size;
-  uint8_t *data;
+  uint32_t nameTableSize;
+  uint32_t tableCount;
+  char *nameTable;
+  struct importTable *importTables;
 };
 
 struct __attribute__((packed)) tlsInfo

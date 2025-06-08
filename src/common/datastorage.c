@@ -114,10 +114,27 @@ void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries)
     }
 }
 
+void freeImportLibrariesStruct(struct importLibraries *importLibraries)
+{
+  nullAndFree((void**)&(importLibraries->nameTable));
+  
+  if(importLibraries->importTables != NULL)
+    {
+      for(uint32_t i = 0; i < importLibraries->tableCount; i++)
+	{
+	  nullAndFree((void**)&(importLibraries->importTables[i].addresses));
+	}
+
+      nullAndFree((void**)&(importLibraries->nameTable));
+    }
+}
+
 void freeOptHeadersStruct(struct optHeaders **optHeaders)
 {
   if(*optHeaders != NULL)
     {
+      nullAndFree((void**)&((*optHeaders)->importLibraries.nameTable));
+      nullAndFree((void**)&((*optHeaders)->importLibraries.importTables));
       nullAndFree((void**)optHeaders);
     }
 }
