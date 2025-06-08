@@ -235,28 +235,21 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
     }
 
   // Allocate enough memory for the name table
-  uint32_t nameTableLen = 0;
+  uint32_t nameOffsets[importLibraries->tableCount];
 
   for(uint32_t i = 0; i < importLibraries->tableCount; i++)
     {
-      nameTableLen += getNextAligned(strlen(names[i]) + 1, sizeof(uint32_t));
+      nameOffsets[i] = importLibraries->nameTableSize;
+      importLibraries->nameTableSize += getNextAligned(strlen(names[i]) + 1, sizeof(uint32_t));
     }
 
-  importLibraries->nameTable = calloc(nameTableLen, sizeof(char));
+  importLibraries->nameTable = calloc(importLibraries->nameTableSize, sizeof(char));
   if(importLibraries->nameTable == NULL) {return ERR_OUT_OF_MEM;}
 
   // Populate the name table
   for(uint32_t i = 0; i < importLibraries->tableCount; i++)
     {
-      if(i == 0)
-	{
-	  strcpy(importLibraries->nameTable, names[i]);
-	}
-      else
-	{
-	  uint32_t nameTableOffset = getNextAligned(strlen(importLibraries->nameTable) + 1, sizeof(uint32_t));
-	  strcpy(&(importLibraries->nameTable[nameTableOffset]), names[i]);
-	}
+      strcpy(&(importLibraries->nameTable[nameOffsets[i]]), names[i]);
     }
 
   return SUCCESS;
