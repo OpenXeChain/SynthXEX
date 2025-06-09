@@ -93,7 +93,6 @@ struct section
 
 struct peImport
 {
-  bool ordinal;
   uint32_t iatAddr;
   uint32_t branchStubAddr;
 };

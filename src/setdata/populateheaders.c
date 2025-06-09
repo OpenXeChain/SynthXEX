@@ -1,3 +1,4 @@
+
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
@@ -21,23 +22,33 @@
 int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct peData *peData)
 {
   // Writing data into XEX header.
-  strcpy(xexHeader->magic, "XEX2"); // Magic
+  strncpy(xexHeader->magic, "XEX2", sizeof(char) * 4); // Magic
 
   // Module flags (type of executable)
-  xexHeader->moduleFlags = 0;
-  
-  if(peData->characteristics & PE_CHAR_FLAG_DLL)
+  // I'm not sure if this is determined properly, but it should be accurate most of the time
+  if(xexHeader->moduleFlags == 0)
     {
-      xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL; // The executable is a DLL
-    }
-  else
-    {
-      xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE; // The executable is a regular title
-    }
-
-  if(peData->peExportInfo.count > 0)
-    {
-      xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
+      printf("HERE!\n");
+      if(peData->baseAddr < 0x90000000 && peData->peExportInfo.count > 0)
+	{
+	  // Title DLL
+	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL | XEX_MOD_FLAG_TITLE;
+	}
+      else if(peData->baseAddr >= 0x90000000 && peData->peExportInfo.count > 0)
+	{
+	  // System DLL
+	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL | XEX_MOD_FLAG_EXPORTS;
+	}
+      else if(peData->baseAddr >= 0x90000000)
+	{
+	  // DLL
+	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL;
+	}
+      else
+	{
+	  // Just a regular title
+	  xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE;
+	}
     }
   
   xexHeader->optHeaderCount = optHeaderEntries->count;

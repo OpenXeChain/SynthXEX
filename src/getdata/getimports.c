@@ -204,18 +204,6 @@ int getImports(FILE *pe, struct peData *peData)
 	  peData->peImportInfo.tables[i].imports = realloc(peData->peImportInfo.tables[i].imports, (j + 1) * sizeof(struct peImport));
 	  peData->peImportInfo.tables[i].imports[j].branchStubAddr = 0; // Make sure this is zeroed, we rely on it later
 
-	  // Check which type of import we have
-	  if(!(currentImport & PE_IMPORT_ORDINAL_FLAG))
-	    {
-	      nullAndFree((void**)&currentIDT);
-	      nullAndFree((void**)&blankIDT);
-	      return ERR_UNSUPPORTED_STRUCTURE; // We don't support import by name yet
-	    }
-	  else
-	    {
-	      peData->peImportInfo.tables[i].imports[j].ordinal = true;
-	    }
-
 	  // Store the address of the current import entry in iatAddr
 	  uint32_t currentImportRVA = offsetToRVA(ftell(pe) - 4, &(peData->sections));
 	  if(currentImportRVA == 0) {nullAndFree((void**)&currentIDT); nullAndFree((void**)&blankIDT); return ERR_INVALID_RVA_OR_OFFSET;}

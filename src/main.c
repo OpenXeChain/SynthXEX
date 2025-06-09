@@ -110,7 +110,8 @@ void dispHelp(char **argv)
   printf("-l,\t--libs,\t\t\tShow licensing information of libraries used\n");
   printf("-s,\t--skip-machine-check,\tSkip the PE file machine ID check\n");
   printf("-i,\t--input,\t\tSpecify input PE file path\n");
-  printf("-o,\t--output,\t\tSpecify output XEX file path\n\n");
+  printf("-o,\t--output,\t\tSpecify output XEX file path\n");
+  printf("-t,\t--type,\t\t\tOverride automatic executable type detection\n\t\t\t\t(options: title, titledll, sysdll, dll)\n\n");
 }
 
 int main(int argc, char **argv)
@@ -123,8 +124,24 @@ int main(int argc, char **argv)
     {"skip-machine-check", no_argument, 0, 0},
     {"input", required_argument, 0, 0},
     {"output", required_argument, 0, 0},
+    {"type", required_argument, 0, 0},
     {0, 0, 0, 0}
   };
+
+  struct offsets *offsets = calloc(1, sizeof(struct offsets));
+  struct xexHeader *xexHeader = calloc(1, sizeof(struct xexHeader));
+  struct secInfoHeader *secInfoHeader = calloc(1, sizeof(struct secInfoHeader));
+  struct peData *peData = calloc(1, sizeof(struct peData));
+  struct optHeaderEntries *optHeaderEntries = calloc(1, sizeof(struct optHeaderEntries));
+  struct optHeaders *optHeaders = calloc(1, sizeof(struct optHeaders));
+
+  if(offsets == NULL || xexHeader == NULL || secInfoHeader == NULL || peData == NULL
+     || optHeaderEntries == NULL || optHeaders == NULL)
+    {
+      printf("%s ERROR: Out of memory. Aborting\n", PRINT_STEM);
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      return -1;
+    }
 
   int optIndex = 0;
   int option = 0;
@@ -136,21 +153,24 @@ int main(int argc, char **argv)
   char *pePath = NULL;
   char *xexfilePath = NULL;
   
-  while((option = getopt_long(argc, argv, "hvlsi:o:", longOptions, &optIndex)) != -1)
+  while((option = getopt_long(argc, argv, "hvlsi:o:t:", longOptions, &optIndex)) != -1)
     {      
       if(option == 'h' || option == '?' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
 	{
 	  dispHelp(argv);
+	  freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 	  return SUCCESS;
 	}
       else if(option == 'v' || (option == 0 && strcmp(longOptions[optIndex].name, "version") == 0))
 	{
 	  dispVer();
+	  freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 	  return SUCCESS;
 	}
       else if(option == 'l' || (option == 0 && strcmp(longOptions[optIndex].name, "libs") == 0))
 	{
 	  dispLibs();
+	  freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 	  return SUCCESS;
 	}
       else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
@@ -166,11 +186,13 @@ int main(int argc, char **argv)
 	  if(pePath == NULL)
 	    {
 	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-	      if(xexfilePath != NULL) {nullAndFree((void**)&xexfilePath);}
+	      nullAndFree((void**)&xexfilePath);
+	      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 	      return -1;
 	    }
 	  
 	  strncpy(pePath, optarg, strlen(optarg) + 1);
+	  pePath[strlen(optarg)] = '\0';
 	}
       else if(option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
 	{
@@ -180,11 +202,45 @@ int main(int argc, char **argv)
 	  if(xexfilePath == NULL)
 	    {
 	      printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-	      if(pePath != NULL) {nullAndFree((void**)&pePath);}
+	      nullAndFree((void**)&pePath);
+	      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 	      return -1;
 	    }
 	  
 	  strncpy(xexfilePath, optarg, strlen(optarg) + 1);
+	  xexfilePath[strlen(optarg)] = '\0';
+	}
+      else if(option == 't' || (option == 0 && strcmp(longOptions[optIndex].name, "type") == 0))
+	{
+	  if(strcmp(optarg, "title") == 0)
+	    {
+	      // Overriding type with "title"
+	      xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE;
+	    }
+	  else if(strcmp(optarg, "titledll") == 0)
+	    {
+	      // Overriding type with "titledll"
+	      xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE | XEX_MOD_FLAG_DLL;
+	    }
+	  else if(strcmp(optarg, "sysdll") == 0)
+	    {
+	      // Overriding type with "sysdll"
+	      xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL;
+	      printf("moduleFlags: 0x%.8X\n", xexHeader->moduleFlags);
+	    }
+	  else if(strcmp(optarg, "dll") == 0)
+	    {
+	      // Overriding type with "dll"
+	      xexHeader->moduleFlags = XEX_MOD_FLAG_DLL;
+	    }
+	  else
+	    {
+	      printf("%s ERROR: Invalid type override \"%s\" (valid: title, titledll, sysdll, dll). Aborting.\n", PRINT_STEM, optarg);
+	      nullAndFree((void**)&pePath);
+	      nullAndFree((void**)&xexfilePath);
+	      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+	      return -1;
+	    }
 	}
     }
 
@@ -241,25 +297,6 @@ int main(int argc, char **argv)
   //free(xexfilePath);
 
   int ret;
-  
-  struct offsets *offsets = calloc(1, sizeof(struct offsets));
-  struct xexHeader *xexHeader = calloc(1, sizeof(struct xexHeader));
-  struct secInfoHeader *secInfoHeader = calloc(1, sizeof(struct secInfoHeader));
-  struct peData *peData = calloc(1, sizeof(struct peData));
-  struct optHeaderEntries *optHeaderEntries = calloc(1, sizeof(struct optHeaderEntries));
-  struct optHeaders *optHeaders = calloc(1, sizeof(struct optHeaders));
-
-  if(offsets == NULL || xexHeader == NULL || secInfoHeader == NULL || peData == NULL
-     || optHeaderEntries == NULL || optHeaders == NULL)
-    {
-      printf("%s ERROR: Out of memory. Aborting\n", PRINT_STEM);
-      nullAndFree((void**)&xexfilePath);
-      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
-      fclose(pe);
-      fclose(xex);
-      return -1;
-    }
-  
   printf("%s Validating PE file...\n", PRINT_STEM);
   
   if(!validatePE(pe, skipMachineCheck))
