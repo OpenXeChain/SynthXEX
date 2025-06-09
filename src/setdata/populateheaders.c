@@ -37,7 +37,7 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
 	  // System DLL
 	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL | XEX_MOD_FLAG_EXPORTS;
 	}
-      else if(peData->baseAddr >= 0x90000000)
+      else if(peData->characteristics & PE_CHAR_FLAG_DLL)
 	{
 	  // DLL
 	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL;
