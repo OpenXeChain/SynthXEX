@@ -39,12 +39,13 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
   uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
   secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor));
   if(secInfoHeader->descriptors == NULL) {return ERR_OUT_OF_MEM;}
+  struct pageDescriptor *descriptors = secInfoHeader->descriptors; // So we don't dereference an unaligned pointer
   
   // Setting size/info data and calculating hashes for page descriptors
   for(int64_t i = secInfoHeader->pageDescCount - 1; i >= 0; i--)
     {      
       // Get page type (rwx)
-      secInfoHeader->descriptors[i].sizeAndInfo = getRwx(secInfoHeader, peData, i);
+      descriptors[i].sizeAndInfo = getRwx(secInfoHeader, peData, i);
       
       // Init sha1 hash
       struct sha1_ctx shaContext;
@@ -56,19 +57,19 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
 
       // For little endian systems, swap into big endian for hashing, then back (to keep struct endianness consistent)
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
+      descriptors[i].sizeAndInfo = __builtin_bswap32(descriptors[i].sizeAndInfo);
 #endif
       
       sha1_update(&shaContext, pageSize, page);
-      sha1_update(&shaContext, 0x18, (uint8_t*)&secInfoHeader->descriptors[i]);
+      sha1_update(&shaContext, 0x18, (uint8_t*)&descriptors[i]);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
+      descriptors[i].sizeAndInfo = __builtin_bswap32(descriptors[i].sizeAndInfo);
 #endif
       
       if(i != 0)
 	{
-	  sha1_digest(&shaContext, 0x14, secInfoHeader->descriptors[i - 1].sha1);
+	  sha1_digest(&shaContext, 0x14, descriptors[i - 1].sha1);
 	}
       else
 	{

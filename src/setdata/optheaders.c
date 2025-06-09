@@ -1,3 +1,4 @@
+
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
@@ -43,6 +44,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
   secInfoHeader->importTableCount = peImportInfo->tableCount;
   importLibraries->importTables = calloc(importLibraries->tableCount, sizeof(struct importTable));
   if(importLibraries->importTables == NULL) {return ERR_OUT_OF_MEM;}
+  struct importTable *importTables = importLibraries->importTables; // Use this to avoid dereferencing an unaligned pointer
   
   // Initialise the size of the import libraries to just the size of the header (- 2 * sizeof(void*) to exclude addresses for internal use only)
   importLibraries->size = (sizeof(struct importLibraries) + importLibraries->nameTableSize) - (2 * sizeof(void*));
@@ -54,7 +56,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
   for(int64_t i = importLibraries->tableCount - 1; i >= 0; i--)
     {
       // Set the table index field to the current index
-      importLibraries->importTables[i].tableIndex = i;
+      importTables[i].tableIndex = i;
       
       // Extract the name, target, and minimum versions from the name string
       // Major and minor version are always 2 and 0, respectively
@@ -95,7 +97,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 	{return ERR_INVALID_IMPORT_NAME;}
 
       // Now pack these into the target version bitfield
-      importLibraries->importTables[i].targetVer =
+      importTables[i].targetVer =
 	((majorVer & 0xF) << (32 - 4))
 	| ((minorVer & 0xF) << (32 - 4 - 4))
 	| (buildVer << (32 - 4 - 4 - 16))
@@ -120,7 +122,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 	{return ERR_INVALID_IMPORT_NAME;}
 
       // Now pack these into the minimum version bitfield
-      importLibraries->importTables[i].minimumVer =
+      importTables[i].minimumVer =
 	((majorVer & 0xF) << (32 - 4))
 	| ((minorVer & 0xF) << (32 - 4 - 4))
 	| (buildVer << (32 - 4 - 4 - 16))
@@ -129,15 +131,15 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
       // Hardcode a currently unknown value. TODO: find out how this is calculated.
       if(strcmp(names[i], "xboxkrnl.exe") == 0)
 	{
-	  importLibraries->importTables[i].unknown = 0x45DC17E0;
+	  importTables[i].unknown = 0x45DC17E0;
 	}
       else if(strcmp(names[i], "xam.xex") == 0)
 	{
-	  importLibraries->importTables[i].unknown = 0xFCA15C76;
+	  importTables[i].unknown = 0xFCA15C76;
 	}
       else if(strcmp(names[i], "xbdm.xex") == 0)
 	{
-	  importLibraries->importTables[i].unknown = 0xECEB8109;
+	  importTables[i].unknown = 0xECEB8109;
 	}
       else
 	{
@@ -145,42 +147,43 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 	}
 
       // Determine the number of addresses (2 for functions, 1 for everything else)
-      importLibraries->importTables[i].addressCount =
+      importTables[i].addressCount =
 	(peImportInfo->tables[i].branchStubCount * 2)
 	+ (peImportInfo->tables[i].importCount - peImportInfo->tables[i].branchStubCount);
 
       // Allocate enough memory for the addresses
-      importLibraries->importTables[i].addresses = calloc(importLibraries->importTables[i].addressCount, sizeof(uint32_t));
-      if(importLibraries->importTables[i].addresses == NULL) {return ERR_OUT_OF_MEM;}
+      importTables[i].addresses = calloc(importTables[i].addressCount, sizeof(uint32_t));
+      if(importTables[i].addresses == NULL) {return ERR_OUT_OF_MEM;}
+      uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
       
       // Populate the addresses
       uint16_t currentAddr = 0;
       
       for(uint16_t j = 0; j < peImportInfo->tables[i].importCount; j++)
 	{
-	  if(currentAddr >= importLibraries->importTables[i].addressCount)
+	  if(currentAddr >= importTables[i].addressCount)
 	    {
 	      return ERR_DATA_OVERFLOW;
 	    }
 	  
-	  importLibraries->importTables[i].addresses[currentAddr] = peImportInfo->tables[i].imports[j].iatAddr;
+	  addresses[currentAddr] = peImportInfo->tables[i].imports[j].iatAddr;
 	  currentAddr++;
 
 	  if(peImportInfo->tables[i].imports[j].branchStubAddr != 0)
 	    {
-	      if(currentAddr >= importLibraries->importTables[i].addressCount)
+	      if(currentAddr >= importTables[i].addressCount)
 		{
 		  return ERR_DATA_OVERFLOW;
 		}
 	      
-	      importLibraries->importTables[i].addresses[currentAddr] = peImportInfo->tables[i].imports[j].branchStubAddr;
+	      addresses[currentAddr] = peImportInfo->tables[i].imports[j].branchStubAddr;
 	      currentAddr++;
 	    }
 	}
 
       // Determine the total size, in bytes, of the current table (- sizeof(void*) to exclude address to addresses at the end)
-      importLibraries->importTables[i].size = (sizeof(struct importTable) - sizeof(void*) + (importLibraries->importTables[i].addressCount * sizeof(uint32_t)));
-      importLibraries->size += importLibraries->importTables[i].size;
+      importTables[i].size = (sizeof(struct importTable) - sizeof(void*) + (importTables[i].addressCount * sizeof(uint32_t)));
+      importLibraries->size += importTables[i].size;
 
       // Init sha1 hash
       struct sha1_ctx shaContext;
@@ -188,46 +191,46 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 
       // On little endian this ensures the byteswapped address count doesn't cause any trouble when using it.
       // On big endian it's pointless but here so the code isn't too complex with differences between endianness.
-      uint16_t addressCount = importLibraries->importTables[i].addressCount;
+      uint16_t addressCount = importTables[i].addressCount;
       
       // If we're on a little endian system, swap everything into big endian for hashing
 #ifdef LITTLE_ENDIAN_SYSTEM
-      importLibraries->importTables[i].size = __builtin_bswap32(importLibraries->importTables[i].size);
-      importLibraries->importTables[i].unknown = __builtin_bswap32(importLibraries->importTables[i].unknown);
-      importLibraries->importTables[i].targetVer = __builtin_bswap32(importLibraries->importTables[i].targetVer);
-      importLibraries->importTables[i].minimumVer = __builtin_bswap32(importLibraries->importTables[i].minimumVer);
-      importLibraries->importTables[i].addressCount = __builtin_bswap16(importLibraries->importTables[i].addressCount);
+      importTables[i].size = __builtin_bswap32(importTables[i].size);
+      importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+      importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+      importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+      importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
       // Byteswap the addresses
       for(uint16_t j = 0; j < addressCount; j++)
 	{
-	  importLibraries->importTables[i].addresses[j] = __builtin_bswap32(importLibraries->importTables[i].addresses[j]);
+	  addresses[j] = __builtin_bswap32(addresses[j]);
 	}
 #endif
 
       // - sizeof(void*) to exclude the address to the addresses at the end (not part of the XEX format)
       // +/- sizeof(uint32_t) to exclude table size from hash
-      sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*) - sizeof(uint32_t), (void*)&(importLibraries->importTables[i]) + sizeof(uint32_t));
-      sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void*)importLibraries->importTables[i].addresses);
+      sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*) - sizeof(uint32_t), (void*)&(importTables[i]) + sizeof(uint32_t));
+      sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void*)addresses);
 
       // If we're on a little endian system, swap everything back into little endian
 #ifdef LITTLE_ENDIAN_SYSTEM
-      importLibraries->importTables[i].size = __builtin_bswap32(importLibraries->importTables[i].size);
-      importLibraries->importTables[i].unknown = __builtin_bswap32(importLibraries->importTables[i].unknown);
-      importLibraries->importTables[i].targetVer = __builtin_bswap32(importLibraries->importTables[i].targetVer);
-      importLibraries->importTables[i].minimumVer = __builtin_bswap32(importLibraries->importTables[i].minimumVer);
-      importLibraries->importTables[i].addressCount = __builtin_bswap16(importLibraries->importTables[i].addressCount);
+      importTables[i].size = __builtin_bswap32(importTables[i].size);
+      importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+      importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+      importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+      importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
       // Byteswap the addresses
       for(uint16_t j = 0; j < addressCount; j++)
 	{
-	  importLibraries->importTables[i].addresses[j] = __builtin_bswap32(importLibraries->importTables[i].addresses[j]);
+	  addresses[j] = __builtin_bswap32(addresses[j]);
 	}
 #endif
       
       if(i != 0)
 	{
-	  sha1_digest(&shaContext, 0x14, importLibraries->importTables[i - 1].sha1);
+	  sha1_digest(&shaContext, 0x14, importTables[i - 1].sha1);
 	}
       else
 	{
@@ -247,11 +250,12 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
   importLibraries->size += importLibraries->nameTableSize;
   importLibraries->nameTable = calloc(importLibraries->nameTableSize, sizeof(char));
   if(importLibraries->nameTable == NULL) {return ERR_OUT_OF_MEM;}
+  char *nameTable = importLibraries->nameTable; // Use this to avoid dereferencing an unaligned pointer
 
   // Populate the name table
   for(uint32_t i = 0; i < importLibraries->tableCount; i++)
     {
-      strcpy(&(importLibraries->nameTable[nameOffsets[i]]), names[i]);
+      strcpy(&(nameTable[nameOffsets[i]]), names[i]);
     }
 
   return SUCCESS;

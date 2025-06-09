@@ -52,16 +52,19 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
   // Page descriptors
   fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void*), SEEK_SET);
+
+  // So we don't try to dereference an unaligned pointer
+  struct pageDescriptor *descriptors = secInfoHeader->descriptors;
   
   for(int i = 0; i < secInfoHeader->pageDescCount; i++)
     {
 #ifdef LITTLE_ENDIAN_SYSTEM
-      secInfoHeader->descriptors[i].sizeAndInfo = __builtin_bswap32(secInfoHeader->descriptors[i].sizeAndInfo);
+      descriptors[i].sizeAndInfo = __builtin_bswap32(descriptors[i].sizeAndInfo);
 #endif
       
       // Writing out current descriptor...
-      fwrite(&(secInfoHeader->descriptors[i].sizeAndInfo), sizeof(uint32_t), 0x1, xex);
-      fwrite(secInfoHeader->descriptors[i].sha1, sizeof(uint8_t), 0x14, xex);
+      fwrite(&(descriptors[i].sizeAndInfo), sizeof(uint32_t), 0x1, xex);
+      fwrite(descriptors[i].sha1, sizeof(uint8_t), 0x14, xex);
     }
 
   // Basefile
@@ -122,6 +125,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
 
       // Write the main header first
+
+      // Use these to avoid dereferencing an unaligned pointer
+      char *nameTable = optHeaders->importLibraries.nameTable;
+      
       // Save the values we need to use before byteswapping
       uint32_t nameTableSize = optHeaders->importLibraries.nameTableSize;
       uint32_t tableCount = optHeaders->importLibraries.tableCount;
@@ -133,28 +140,37 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 #endif
 
       fwrite(&(optHeaders->importLibraries), sizeof(uint8_t), sizeof(struct importLibraries) - (2 * sizeof(void*)), xex);
-      fwrite(optHeaders->importLibraries.nameTable, sizeof(uint8_t), nameTableSize, xex);
-
-      // Now write each import table
-      for(uint32_t i = 0; i < tableCount; i++)
-	{
-	  uint16_t addressCount = optHeaders->importLibraries.importTables[i].addressCount;
+      fwrite(nameTable, sizeof(uint8_t), nameTableSize, xex);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-	  optHeaders->importLibraries.importTables[i].size = __builtin_bswap32(optHeaders->importLibraries.importTables[i].size);
-	  optHeaders->importLibraries.importTables[i].unknown = __builtin_bswap32(optHeaders->importLibraries.importTables[i].unknown);
-	  optHeaders->importLibraries.importTables[i].targetVer = __builtin_bswap32(optHeaders->importLibraries.importTables[i].targetVer);
-	  optHeaders->importLibraries.importTables[i].minimumVer = __builtin_bswap32(optHeaders->importLibraries.importTables[i].minimumVer);
-	  optHeaders->importLibraries.importTables[i].addressCount = __builtin_bswap16(optHeaders->importLibraries.importTables[i].addressCount);
+      // Restore the table count (we require it to free the import libraries struct later)
+      optHeaders->importLibraries.tableCount = tableCount;
+#endif
+
+      // Now write each import table
+      // Use this to avoid dereferencing an unaligned pointer
+      struct importTable *importTables = optHeaders->importLibraries.importTables;
+      
+      for(uint32_t i = 0; i < tableCount; i++)
+	{
+	  uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
+	  uint16_t addressCount = importTables[i].addressCount;
+
+#ifdef LITTLE_ENDIAN_SYSTEM
+	  importTables[i].size = __builtin_bswap32(importTables[i].size);
+	  importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+	  importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+	  importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+	  importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
 	  for(uint16_t j = 0; j < addressCount; j++)
 	    {
-	      optHeaders->importLibraries.importTables[i].addresses[j] = __builtin_bswap32(optHeaders->importLibraries.importTables[i].addresses[j]);
+	      addresses[j] = __builtin_bswap32(addresses[j]);
 	    }
 #endif
 
-	  fwrite(&(optHeaders->importLibraries.importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void*), xex);
-	  fwrite(optHeaders->importLibraries.importTables[i].addresses, sizeof(uint32_t), addressCount, xex);
+	  fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void*), xex);
+	  fwrite(addresses, sizeof(uint32_t), addressCount, xex);
 	}
 
       currentHeader++;

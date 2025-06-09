@@ -62,7 +62,9 @@ void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader)
 {
   if(*secInfoHeader != NULL)
     {
-      nullAndFree((void**)&((*secInfoHeader)->descriptors));
+      struct pageDescriptor *descriptors = (*secInfoHeader)->descriptors; // To avoid dereferencing an unaligned pointer
+      nullAndFree((void**)&descriptors);
+      //(*secInfoHeader)->descriptors = descriptors; // Not required in this case as secInfoHeader is freed anyways
       nullAndFree((void**)secInfoHeader);
     }
 }
@@ -110,16 +112,22 @@ void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries)
 
 void freeImportLibrariesStruct(struct importLibraries *importLibraries)
 {
-  nullAndFree((void**)&(importLibraries->nameTable));
+  struct importTable *importTables = importLibraries->importTables;
+  char *nameTable = importLibraries->nameTable; // Use these to avoid dereferencing unaligned pointers
   
-  if(importLibraries->importTables != NULL)
+  nullAndFree((void**)&nameTable);
+  
+  if(importTables != NULL)
     {
       for(uint32_t i = 0; i < importLibraries->tableCount; i++)
 	{
-	  nullAndFree((void**)&(importLibraries->importTables[i].addresses));
+	  uint32_t *addresses = importTables[i].addresses; // Avoid dereferencing unaligned pointer
+	  nullAndFree((void**)&addresses);
+	  importTables[i].addresses = addresses;
 	}
 
-      nullAndFree((void**)&(importLibraries->importTables));
+      nullAndFree((void**)&importTables);
+      importLibraries->importTables = importTables;
     }
 }
 
