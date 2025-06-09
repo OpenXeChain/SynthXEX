@@ -1,4 +1,3 @@
-
 // This file is part of SynthXEX, one component of the
 // FreeChainXenon development toolchain
 //
@@ -28,7 +27,6 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
   // I'm not sure if this is determined properly, but it should be accurate most of the time
   if(xexHeader->moduleFlags == 0)
     {
-      printf("HERE!\n");
       if(peData->baseAddr < 0x90000000 && peData->peExportInfo.count > 0)
 	{
 	  // Title DLL

@@ -226,7 +226,6 @@ int main(int argc, char **argv)
 	    {
 	      // Overriding type with "sysdll"
 	      xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL;
-	      printf("moduleFlags: 0x%.8X\n", xexHeader->moduleFlags);
 	    }
 	  else if(strcmp(optarg, "dll") == 0)
 	    {
