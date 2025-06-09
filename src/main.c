@@ -403,19 +403,7 @@ int main(int argc, char **argv)
   
   printf("%s Created basefile!\n", PRINT_STEM);  
   
-  // Setting final XEX data structs
-  printf("%s Building XEX header...\n", PRINT_STEM);
-  ret = setXEXHeader(xexHeader, peData);
-
-  if(ret != SUCCESS)
-    {
-      printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
-      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
-      fclose(basefile);
-      fclose(xex);
-      return -1;
-    }
-  
+  // Setting final XEX data structs 
   printf("%s Building security header...\n", PRINT_STEM);
   ret = setSecInfoHeader(secInfoHeader, peData);
 
@@ -465,6 +453,18 @@ int main(int argc, char **argv)
 	  printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
 	}
       
+      freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+      fclose(basefile);
+      fclose(xex);
+      return -1;
+    }
+
+  printf("%s Building XEX header...\n", PRINT_STEM);
+  ret = setXEXHeader(xexHeader, optHeaderEntries, peData);
+
+  if(ret != SUCCESS)
+    {
+      printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
       freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
       fclose(basefile);
       fclose(xex);

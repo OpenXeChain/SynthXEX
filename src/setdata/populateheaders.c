@@ -18,7 +18,7 @@
 
 #include "populateheaders.h"
 
-int setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
+int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct peData *peData)
 {
   // Writing data into XEX header.
   strcpy(xexHeader->magic, "XEX2"); // Magic
@@ -40,7 +40,7 @@ int setXEXHeader(struct xexHeader *xexHeader, struct peData *peData)
       xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
     }
   
-  xexHeader->optHeaderCount = 0x4; // Hard-coding until more optional headers supported, then maybe it can be determined dynamically.
+  xexHeader->optHeaderCount = optHeaderEntries->count;
 
   return SUCCESS;
 }

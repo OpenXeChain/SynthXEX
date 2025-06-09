@@ -62,13 +62,7 @@ void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader)
 {
   if(*secInfoHeader != NULL)
     {
-      // Ignore the unaligned pointer warning here, every field before descriptors is a multiple of 8.
-      // Also works for Clang.
-      #pragma GCC diagnostic push
-      #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
       nullAndFree((void**)&((*secInfoHeader)->descriptors));
-      #pragma GCC diagnostic pop
-      
       nullAndFree((void**)secInfoHeader);
     }
 }
@@ -125,7 +119,7 @@ void freeImportLibrariesStruct(struct importLibraries *importLibraries)
 	  nullAndFree((void**)&(importLibraries->importTables[i].addresses));
 	}
 
-      nullAndFree((void**)&(importLibraries->nameTable));
+      nullAndFree((void**)&(importLibraries->importTables));
     }
 }
 
@@ -133,8 +127,7 @@ void freeOptHeadersStruct(struct optHeaders **optHeaders)
 {
   if(*optHeaders != NULL)
     {
-      nullAndFree((void**)&((*optHeaders)->importLibraries.nameTable));
-      nullAndFree((void**)&((*optHeaders)->importLibraries.importTables));
+      freeImportLibrariesStruct(&((*optHeaders)->importLibraries));
       nullAndFree((void**)optHeaders);
     }
 }

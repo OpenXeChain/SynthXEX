@@ -158,6 +158,14 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
       
       for(uint16_t j = 0; j < peImportInfo->tables[i].importCount; j++)
 	{
+	  if(currentAddr >= importLibraries->importTables[i].addressCount)
+	    {
+	      return ERR_DATA_OVERFLOW;
+	    }
+	  
+	  importLibraries->importTables[i].addresses[currentAddr] = peImportInfo->tables[i].imports[j].iatAddr;
+	  currentAddr++;
+
 	  if(peImportInfo->tables[i].imports[j].branchStubAddr != 0)
 	    {
 	      if(currentAddr >= importLibraries->importTables[i].addressCount)
@@ -168,14 +176,6 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 	      importLibraries->importTables[i].addresses[currentAddr] = peImportInfo->tables[i].imports[j].branchStubAddr;
 	      currentAddr++;
 	    }
-
-	  if(currentAddr >= importLibraries->importTables[i].addressCount)
-	    {
-	      return ERR_DATA_OVERFLOW;
-	    }
-	  
-	  importLibraries->importTables[i].addresses[currentAddr] = peImportInfo->tables[i].imports[j].iatAddr;
-	  currentAddr++;
 	}
 
       // Determine the total size, in bytes, of the current table (- sizeof(void*) to exclude address to addresses at the end)
@@ -206,7 +206,8 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 #endif
 
       // - sizeof(void*) to exclude the address to the addresses at the end (not part of the XEX format)
-      sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*), (void*)&(importLibraries->importTables[i]));
+      // +/- sizeof(uint32_t) to exclude table size from hash
+      sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*) - sizeof(uint32_t), (void*)&(importLibraries->importTables[i]) + sizeof(uint32_t));
       sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void*)importLibraries->importTables[i].addresses);
 
       // If we're on a little endian system, swap everything back into little endian
@@ -243,6 +244,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
       importLibraries->nameTableSize += getNextAligned(strlen(names[i]) + 1, sizeof(uint32_t));
     }
 
+  importLibraries->size += importLibraries->nameTableSize;
   importLibraries->nameTable = calloc(importLibraries->nameTableSize, sizeof(char));
   if(importLibraries->nameTable == NULL) {return ERR_OUT_OF_MEM;}
 

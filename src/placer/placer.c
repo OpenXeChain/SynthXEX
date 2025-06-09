@@ -62,7 +62,6 @@ int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHea
   return SUCCESS;
 }
 
-// Todo in future: implement a dynamic optional header selection mechanism instead of hard-coding the basic 5
 int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntries, struct secInfoHeader *secInfoHeader, struct optHeaders *optHeaders)
 {
   // XEX Header
@@ -75,14 +74,13 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
   currentOffset += optHeaderEntries->count * sizeof(struct optHeaderEntry);
   
   // Security header
-  currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers etc
+  currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers, at least 8 bytes beyond end of optional header entries
   offsets->secInfoHeader = currentOffset;
   xexHeader->secInfoOffset = currentOffset;
   currentOffset += (sizeof(struct secInfoHeader) - sizeof(void*)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
 
   // Optional headers (minus imports)
   struct importLibIdcs importLibIdcs;
-  uint32_t importLibsIdx; // Entry in opt header entries of import libs
   int ret = setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
 
   if(ret != SUCCESS)
@@ -90,7 +88,7 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
       return ret;
     }
   
-  //currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
+  currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
   
   // PE basefile
   currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
@@ -98,8 +96,8 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
   xexHeader->peOffset = currentOffset;
 
   // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-  //offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
-  //optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+  offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+  optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
 
   return SUCCESS;
 }
