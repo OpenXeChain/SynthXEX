@@ -96,8 +96,11 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
   xexHeader->peOffset = currentOffset;
 
   // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-  offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
-  optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+  if(optHeaders->importLibraries.tableCount > 0)
+    {
+      offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+      optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+    }
 
   return SUCCESS;
 }
