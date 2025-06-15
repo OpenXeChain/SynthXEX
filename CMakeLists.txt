@@ -77,8 +77,8 @@ if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
 
 	# MinGW doesn't support ASAN
 	if(NOT (MINGW))
-		target_compile_options(synthxex PRIVATE -O0 -g -fsanitize=address)
-		target_link_options(synthxex PRIVATE -fsanitize=address)
+		target_compile_options(synthxex PRIVATE -O0 -g -fsanitize=address -fsanitize=undefined)
+		target_link_options(synthxex PRIVATE -lasan -lubsan -fsanitize=address -fsanitize=undefined)
 	else()
 		target_compile_options(synthxex PRIVATE -O0 -g)
 	endif()
