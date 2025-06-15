@@ -24,28 +24,21 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
   strncpy(xexHeader->magic, "XEX2", sizeof(char) * 4); // Magic
 
   // Module flags (type of executable)
-  // I'm not sure if this is determined properly, but it should be accurate most of the time
+  // Not sure if this is correct, for DLLs specifically the type overrides should probably be used instead
   if(xexHeader->moduleFlags == 0)
     {
-      if(peData->baseAddr < 0x90000000 && peData->peExportInfo.count > 0)
+      if(peData->characteristics & PE_CHAR_FLAG_DLL)
 	{
-	  // Title DLL
-	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL | XEX_MOD_FLAG_TITLE;
-	}
-      else if(peData->baseAddr >= 0x90000000 && peData->peExportInfo.count > 0)
-	{
-	  // System DLL
-	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL | XEX_MOD_FLAG_EXPORTS;
-	}
-      else if(peData->characteristics & PE_CHAR_FLAG_DLL)
-	{
-	  // DLL
-	  xexHeader->moduleFlags = XEX_MOD_FLAG_DLL;
+	  xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL; // The executable is a DLL
 	}
       else
 	{
-	  // Just a regular title
-	  xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE;
+	  xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE; // The executable is a regular title
+	}
+
+      if(peData->peExportInfo.count > 0)
+	{
+	  xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
 	}
     }
   
