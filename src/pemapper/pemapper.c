@@ -29,58 +29,70 @@ struct sectionInfo
 // Maps the PE file into the basefile (RVAs become offsets)
 int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
 {
-  // Retrieve data for each section
   struct sectionInfo *sectionInfo = malloc(peData->numberOfSections * sizeof(struct sectionInfo));
-  fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET); // Seek to the first section in the section table at virtualSize
+  if (!sectionInfo)
+    return ERR_OUT_OF_MEM;
 
-  for(uint16_t i = 0; i < peData->numberOfSections; i++)
-    {
-      sectionInfo[i].virtualSize = get32BitFromPE(pe);
-      sectionInfo[i].rva = get32BitFromPE(pe);
-      sectionInfo[i].rawSize = get32BitFromPE(pe);
-      sectionInfo[i].offset = get32BitFromPE(pe);      
-      fseek(pe, 0x18, SEEK_CUR); // Seek to next entry at virtualSize
-    }
-  
-  // Copy the PE header and section table to the basefile verbatim
-  fseek(pe, 0, SEEK_SET);
+  if (fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET) != 0)
+    return ERR_FILE_READ;
+
+  for (uint16_t i = 0; i < peData->numberOfSections; i++) {
+    sectionInfo[i].virtualSize = get32BitFromPE(pe);
+    sectionInfo[i].rva = get32BitFromPE(pe);
+    sectionInfo[i].rawSize = get32BitFromPE(pe);
+    sectionInfo[i].offset = get32BitFromPE(pe);
+
+    if (fseek(pe, 0x18, SEEK_CUR) != 0)
+      return ERR_FILE_READ;
+  }
+
+  if (fseek(pe, 0, SEEK_SET) != 0)
+    return ERR_FILE_READ;
+
   uint8_t *buffer = malloc(peData->headerSize + peData->sectionTableSize);
-  if(buffer == NULL) {return ERR_OUT_OF_MEM;}
+  if (!buffer)
+    return ERR_OUT_OF_MEM;
 
-  fread(buffer, sizeof(uint8_t), peData->headerSize + peData->sectionTableSize, pe);
-  fwrite(buffer, sizeof(uint8_t), peData->headerSize + peData->sectionTableSize, basefile);
+  size_t totalHeader = peData->headerSize + peData->sectionTableSize;
 
-  // Now map the sections and write them
-  for(uint16_t i = 0; i < peData->numberOfSections; i++)
-    {
-      buffer = realloc(buffer, sectionInfo[i].rawSize * sizeof(uint8_t));
-      if(buffer == NULL) {return ERR_OUT_OF_MEM;}
-      
-      fseek(pe, sectionInfo[i].offset, SEEK_SET);
-      fread(buffer, sizeof(uint8_t), sectionInfo[i].rawSize, pe);
+  if (fread(buffer, 1, totalHeader, pe) != totalHeader)
+    return ERR_FILE_READ;
+  if (fwrite(buffer, 1, totalHeader, basefile) != totalHeader)
+    return ERR_FILE_READ;
 
-      fseek(basefile, sectionInfo[i].rva, SEEK_SET);
-      fwrite(buffer, sizeof(uint8_t), sectionInfo[i].rawSize, basefile);
-    }
+  for (uint16_t i = 0; i < peData->numberOfSections; i++) {
+    buffer = realloc(buffer, sectionInfo[i].rawSize);
+    if (!buffer)
+      return ERR_OUT_OF_MEM;
 
-  // Pad the rest of the final page with zeroes, we can achieve this by seeking
-  // to the end and placing a single zero there (unless the data runs all the way up to the end!)
+    if (fseek(pe, sectionInfo[i].offset, SEEK_SET) != 0)
+      return ERR_FILE_READ;
+    if (fread(buffer, 1, sectionInfo[i].rawSize, pe) != sectionInfo[i].rawSize)
+      return ERR_FILE_READ;
+
+    if (fseek(basefile, sectionInfo[i].rva, SEEK_SET) != 0)
+      return ERR_FILE_READ;
+    if (fwrite(buffer, 1, sectionInfo[i].rawSize, basefile) != sectionInfo[i].rawSize)
+      return ERR_FILE_READ;
+  }
+
   uint32_t currentOffset = ftell(basefile);
-  uint32_t nextAligned = getNextAligned(currentOffset, peData->pageSize) - 0x1;
+  uint32_t nextAligned = getNextAligned(currentOffset, peData->pageSize) - 1;
 
-  if(nextAligned != currentOffset)
-    {
-      buffer = realloc(buffer, 1 * sizeof(uint8_t));
-      if(buffer == NULL) {return ERR_OUT_OF_MEM;}
-      buffer[0] = 0;
-      fseek(basefile, nextAligned, SEEK_SET);
-      fwrite(buffer, sizeof(uint8_t), 1, basefile);
-    }
+  if (nextAligned != currentOffset) {
+    buffer = realloc(buffer, 1);
+    if (!buffer)
+      return ERR_OUT_OF_MEM;
+    buffer[0] = 0;
 
-  // Make sure to update the PE (basefile) size
+    if (fseek(basefile, nextAligned, SEEK_SET) != 0)
+      return ERR_FILE_READ;
+    if (fwrite(buffer, 1, 1, basefile) != 1)
+      return ERR_FILE_READ;
+  }
+
   peData->size = ftell(basefile);
-  
-  // We're done with these, free them
+
   nullAndFree((void**)&buffer);
   nullAndFree((void**)&sectionInfo);
 

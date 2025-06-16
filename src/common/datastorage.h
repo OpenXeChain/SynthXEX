@@ -266,7 +266,7 @@ void freePeDataStruct(struct peData **peData);
 void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries);
 void freeOptHeadersStruct(struct optHeaders **optHeaders);
 void freeAllMainStructs(struct offsets **offsets, struct xexHeader **xexHeader, struct secInfoHeader **secInfoHeader,
-			struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders);
+      struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders);
 
 // Functions used for file data manipulation
 

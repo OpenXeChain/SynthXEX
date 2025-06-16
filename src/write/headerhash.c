@@ -21,70 +21,136 @@
 // TEMPORARY, TO BE REPLACED ELSEWHERE WHEN IMPORT HEADER IS IMPLEMENTED
 void setImportsSha1(FILE *xex)
 {
-  fseek(xex, 0x0, SEEK_SET);
-  while(get32BitFromXEX(xex) != 0x103FF){}
-  fseek(xex, get32BitFromXEX(xex) + 0x4, SEEK_SET);
-  
+  if (fseek(xex, 0, SEEK_SET) != 0)
+    return;
+
+  while (get32BitFromXEX(xex) != 0x103FF) {
+    if (feof(xex))
+      return;
+  }
+
+  if (fseek(xex, get32BitFromXEX(xex) + 0x4, SEEK_SET) != 0)
+    return;
+
   uint8_t importCount[4];
-  fseek(xex, 0x4, SEEK_CUR);
-  fread(importCount, sizeof(uint8_t), 4, xex);
-  fseek(xex, -0x8, SEEK_CUR);
-  
-  fseek(xex, get32BitFromXEX(xex) + 0x4, SEEK_CUR);
+  memset(importCount, 0, sizeof(importCount));
+
+  if (fseek(xex, 0x4, SEEK_CUR) != 0)
+    return;
+
+  if (fread(importCount, 1, 4, xex) != 4)
+    return;
+
+  if (fseek(xex, -0x8, SEEK_CUR) != 0)
+    return;
+
+  if (fseek(xex, get32BitFromXEX(xex) + 0x4, SEEK_CUR) != 0)
+    return;
+
   uint32_t size = get32BitFromXEX(xex) - 0x4;
-  
-  uint8_t data[size];
-  fread(data, sizeof(uint8_t), size, xex);
-  
+
+  uint8_t *data = malloc(size);
+  if (!data)
+    return;
+
+  memset(data, 0, size);
+
+  if (fread(data, 1, size, xex) != size) {
+    nullAndFree((void**)&data);
+    return;
+  }
+
   struct sha1_ctx shaContext;
   sha1_init(&shaContext);
   sha1_update(&shaContext, size, data);
 
+  nullAndFree((void**)&data);
+
   uint8_t sha1[20];
+  memset(sha1, 0, sizeof(sha1));
   sha1_digest(&shaContext, 20, sha1);
 
-  fseek(xex, 0x10, SEEK_SET);
-  fseek(xex, get32BitFromXEX(xex) + 0x128, SEEK_SET);
-  fwrite(importCount, sizeof(uint8_t), 4, xex);
-  fwrite(sha1, sizeof(uint8_t), 20, xex);
+  if (fseek(xex, 0x10, SEEK_SET) != 0)
+    return;
+
+  if (fseek(xex, get32BitFromXEX(xex) + 0x128, SEEK_SET) != 0)
+    return;
+
+  fwrite(importCount, 1, 4, xex);
+  fwrite(sha1, 1, 20, xex);
 }
+
 
 // So, it would probably be more sensible to endian-swap all of the data back and determine which structure is where
 // to determine the hash, but reading the file we just created is easier.
 int setHeaderSha1(FILE *xex)
 {
-  fseek(xex, 0x8, SEEK_SET); // Basefile offset
+  if (fseek(xex, 0x8, SEEK_SET) != 0)
+    return ERR_FILE_READ;
+
   uint32_t basefileOffset = get32BitFromXEX(xex);
-  
-  fseek(xex, 0x10, SEEK_SET); // Secinfo offset
+
+  if (fseek(xex, 0x10, SEEK_SET) != 0)
+    return ERR_FILE_READ;
+
   uint32_t secInfoOffset = get32BitFromXEX(xex);
 
-  uint32_t endOfImageInfo = secInfoOffset + 0x8 + 0x174; // 0x8 == image info offset in security info, 0x174 == length of that
-  uint32_t remainingSize = basefileOffset - endOfImageInfo; // How much data is between end of image info and basefile (we hash that too)
+  uint32_t endOfImageInfo = secInfoOffset + 0x8 + 0x174;
+  uint32_t remainingSize = basefileOffset - endOfImageInfo;
 
-  // Init sha1 hash
   struct sha1_ctx shaContext;
+  memset(&shaContext, 0, sizeof(shaContext));
   sha1_init(&shaContext);
 
-  // Hash first part (remainder of headers is done first, then the start)
-  uint8_t remainderOfHeaders[remainingSize];
-  fseek(xex, endOfImageInfo, SEEK_SET);
-  fread(remainderOfHeaders, sizeof(uint8_t), remainingSize, xex);
+  uint8_t *remainderOfHeaders = malloc(remainingSize);
+  if (!remainderOfHeaders)
+    return ERR_OUT_OF_MEM;
+
+  memset(remainderOfHeaders, 0, remainingSize);
+
+  if (fseek(xex, endOfImageInfo, SEEK_SET) != 0) {
+    nullAndFree((void**)&remainderOfHeaders);
+    return ERR_FILE_READ;
+  }
+
+  if (fread(remainderOfHeaders, 1, remainingSize, xex) != remainingSize) {
+    nullAndFree((void**)&remainderOfHeaders);
+    return ERR_FILE_READ;
+  }
+
   sha1_update(&shaContext, remainingSize, remainderOfHeaders);
-  
-  uint8_t headersStart[secInfoOffset + 0x8]; // Hash from start up to image info (0x8 into security header)
-  fseek(xex, 0, SEEK_SET);
-  
-  fread(headersStart, sizeof(uint8_t), secInfoOffset + 0x8, xex);
-  sha1_update(&shaContext, secInfoOffset + 0x8, headersStart);  
-  
-  // Get final hash
+  nullAndFree((void**)&remainderOfHeaders);
+
+  uint32_t headersLen = secInfoOffset + 0x8;
+  uint8_t *headersStart = malloc(headersLen);
+  if (!headersStart)
+    return ERR_OUT_OF_MEM;
+
+  memset(headersStart, 0, headersLen);
+
+  if (fseek(xex, 0, SEEK_SET) != 0) {
+    nullAndFree((void**)&headersStart);
+    return ERR_FILE_READ;
+  }
+
+  if (fread(headersStart, 1, headersLen, xex) != headersLen) {
+    nullAndFree((void**)&headersStart);
+    return ERR_FILE_READ;
+  }
+
+  sha1_update(&shaContext, headersLen, headersStart);
+  nullAndFree((void**)&headersStart);
+
   uint8_t headerHash[20];
+  memset(headerHash, 0, sizeof(headerHash));
   sha1_digest(&shaContext, 20, headerHash);
 
-  // Finally, write it out
-  fseek(xex, secInfoOffset + 0x164, SEEK_SET); // 0x164 == offset in secinfo of header hash
-  fwrite(headerHash, sizeof(uint8_t), 20, xex);
+  if (fseek(xex, secInfoOffset + 0x164, SEEK_SET) != 0)
+    return ERR_FILE_READ;
+
+  if (fwrite(headerHash, 1, 20, xex) != 20)
+    return ERR_FILE_READ;
 
   return SUCCESS;
 }
+

@@ -31,10 +31,10 @@
 // Program identifiers
 #define NAME "SynthXEX"
 #define VERSION "v0.0.4"
-#define COPYRIGHT "2024-25"
+#define COPYRIGHT "2024-2025"
 
 #ifdef GIT_COMMIT
-#define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT 
+#define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT
 #else
 #define VERSION_STRING NAME " " VERSION
 #endif

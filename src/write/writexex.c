@@ -77,8 +77,23 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
   
   for(uint32_t i = 0; i < secInfoHeader->peSize; i += readBufSize)
     {
-      fread(buffer, sizeof(uint8_t), readBufSize, pe);
-      fwrite(buffer, sizeof(uint8_t), readBufSize, xex);
+      size_t bytesToRead = (secInfoHeader->peSize - i < readBufSize)
+                          ? secInfoHeader->peSize - i
+                          : readBufSize;
+
+      size_t readRet = fread(buffer, sizeof(uint8_t), bytesToRead, pe);
+      if (readRet != bytesToRead)
+      {
+          fprintf(stderr, "Error: fread failed at offset %u (read %zu of %zu bytes)\n", i, readRet, bytesToRead);
+          break;
+      }
+
+      size_t writeRet = fwrite(buffer, sizeof(uint8_t), readRet, xex);
+      if (writeRet != readRet)
+      {
+          fprintf(stderr, "Error: fwrite failed at offset %u (wrote %zu of %zu bytes)\n", i, writeRet, readRet);
+          break;
+      }
     }
 
   nullAndFree((void**)&buffer);
@@ -152,26 +167,26 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
       struct importTable *importTables = optHeaders->importLibraries.importTables;
       
       for(uint32_t i = 0; i < tableCount; i++)
-	{
-	  uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
-	  uint16_t addressCount = importTables[i].addressCount;
+  {
+    uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
+    uint16_t addressCount = importTables[i].addressCount;
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-	  importTables[i].size = __builtin_bswap32(importTables[i].size);
-	  importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
-	  importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
-	  importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
-	  importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
+    importTables[i].size = __builtin_bswap32(importTables[i].size);
+    importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+    importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+    importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+    importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
-	  for(uint16_t j = 0; j < addressCount; j++)
-	    {
-	      addresses[j] = __builtin_bswap32(addresses[j]);
-	    }
+    for(uint16_t j = 0; j < addressCount; j++)
+      {
+        addresses[j] = __builtin_bswap32(addresses[j]);
+      }
 #endif
 
-	  fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void*), xex);
-	  fwrite(addresses, sizeof(uint32_t), addressCount, xex);
-	}
+    fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void*), xex);
+    fwrite(addresses, sizeof(uint32_t), addressCount, xex);
+  }
 
       currentHeader++;
     }

@@ -27,37 +27,36 @@ struct importLibIdcs
 
 int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders, uint32_t *currentOffset, struct importLibIdcs *importLibIdcs)
 {
-  offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t)); // Calloc because 0 values will be used to determine if a header is not present.
-  if(offsets->optHeaders == NULL) {return ERR_OUT_OF_MEM;}
-  uint32_t sepHeader = 0; // Separate header iterator, i.e. one with it's data outwith the entries
-  
-  for(uint32_t i = 0; i < optHeaderEntries->count; i++)
-    {
-      *currentOffset = getNextAligned(*currentOffset, 0x8);
-         
-      switch(optHeaderEntries->optHeaderEntry[i].id)
-	{
-	case XEX_OPT_ID_BASEFILE_FORMAT:
-	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
-	  offsets->optHeaders[sepHeader] = *currentOffset;
-	  *currentOffset += sizeof(struct basefileFormat);
-	  sepHeader++;
-	  break;
+  // Calloc because 0 values will be used to determine if a header is not present.
+  offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t));
+  if (offsets->optHeaders == NULL)
+    return ERR_OUT_OF_MEM;
 
-	case XEX_OPT_ID_IMPORT_LIBS:
-	  importLibIdcs->header = sepHeader;
-	  importLibIdcs->entry = i;
-	  sepHeader++;
-	  break;
+  // Separate header iterator, i.e. one with it's data outwith the entries
+  uint32_t sepHeader = 0;
 
-	case XEX_OPT_ID_TLS_INFO:
-	  optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
-	  offsets->optHeaders[sepHeader] = *currentOffset;
-	  *currentOffset += sizeof(struct tlsInfo);
-	  sepHeader++;
-	  break;
-	}
+  for (uint32_t i = 0; i < optHeaderEntries->count; i++) {
+    *currentOffset = getNextAligned(*currentOffset, 0x8);
+    switch(optHeaderEntries->optHeaderEntry[i].id) {
+    case XEX_OPT_ID_BASEFILE_FORMAT:
+      optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
+      offsets->optHeaders[sepHeader] = *currentOffset;
+      *currentOffset += sizeof(struct basefileFormat);
+      sepHeader++;
+      break;
+    case XEX_OPT_ID_IMPORT_LIBS:
+      importLibIdcs->header = sepHeader;
+      importLibIdcs->entry = i;
+      sepHeader++;
+      break;
+    case XEX_OPT_ID_TLS_INFO:
+      optHeaderEntries->optHeaderEntry[i].dataOrOffset = *currentOffset;
+      offsets->optHeaders[sepHeader] = *currentOffset;
+      *currentOffset += sizeof(struct tlsInfo);
+      sepHeader++;
+      break;
     }
+  }
 
   return SUCCESS;
 }
@@ -72,7 +71,7 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
   // Optional header entries (no alignment, they immediately follow XEX header)
   offsets->optHeaderEntries = currentOffset;
   currentOffset += optHeaderEntries->count * sizeof(struct optHeaderEntry);
-  
+
   // Security header
   currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers, at least 8 bytes beyond end of optional header entries
   offsets->secInfoHeader = currentOffset;
@@ -82,25 +81,20 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
   // Optional headers (minus imports)
   struct importLibIdcs importLibIdcs;
   int ret = setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
+  if (ret != SUCCESS)
+    return ret;
 
-  if(ret != SUCCESS)
-    {
-      return ret;
-    }
-  
   currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
-  
+
   // PE basefile
   currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
   offsets->basefile = currentOffset;
   xexHeader->peOffset = currentOffset;
 
   // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-  if(optHeaders->importLibraries.tableCount > 0)
-    {
-      offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
-      optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
-    }
-
+  if (optHeaders->importLibraries.tableCount > 0) {
+    offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+    optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
+  }
   return SUCCESS;
 }

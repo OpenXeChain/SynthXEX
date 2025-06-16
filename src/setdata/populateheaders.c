@@ -25,23 +25,15 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
 
   // Module flags (type of executable)
   // Not sure if this is correct, for DLLs specifically the type overrides should probably be used instead
-  if(xexHeader->moduleFlags == 0)
-    {
-      if(peData->characteristics & PE_CHAR_FLAG_DLL)
-	{
-	  xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL; // The executable is a DLL
-	}
-      else
-	{
-	  xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE; // The executable is a regular title
-	}
+  if (xexHeader->moduleFlags == 0) {
+    if (peData->characteristics & PE_CHAR_FLAG_DLL)
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL; // The executable is a DLL
+    else
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE; // The executable is a regular title
+    if (peData->peExportInfo.count > 0)
+      xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
+  }
 
-      if(peData->peExportInfo.count > 0)
-	{
-	  xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS; // The executable exports functions
-	}
-    }
-  
   xexHeader->optHeaderCount = optHeaderEntries->count;
 
   return SUCCESS;
