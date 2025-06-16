@@ -20,288 +20,381 @@
 
 void setBasefileFormat(struct basefileFormat *basefileFormat, struct secInfoHeader *secInfoHeader)
 {
-  basefileFormat->size = (1 * 8) + 8; // (Block count * size of raw data descriptor) + size of data descriptor
-  basefileFormat->encType = 0x0; // No encryption
-  basefileFormat->compType = 0x1; // No compression
-  basefileFormat->dataSize = secInfoHeader->peSize;
-  basefileFormat->zeroSize = 0x0; // We aren't going to be removing any zeroes. TODO: implement this, it can make files much smaller
+    basefileFormat->size = (1 * 8) + 8; // (Block count * size of raw data descriptor) + size of data descriptor
+    basefileFormat->encType = 0x0; // No encryption
+    basefileFormat->compType = 0x1; // No compression
+    basefileFormat->dataSize = secInfoHeader->peSize;
+    basefileFormat->zeroSize = 0x0; // We aren't going to be removing any zeroes. TODO: implement this, it can make files much smaller
 }
 
 // STUB. TLS info not supported.
 void setTLSInfo(struct tlsInfo *tlsInfo)
 {
-  tlsInfo->slotCount = 0x40;
-  tlsInfo->rawDataAddr = 0x0;
-  tlsInfo->dataSize = 0x0;
-  tlsInfo->rawDataSize = 0x0;
+    tlsInfo->slotCount = 0x40;
+    tlsInfo->rawDataAddr = 0x0;
+    tlsInfo->dataSize = 0x0;
+    tlsInfo->rawDataSize = 0x0;
 }
 
 int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportInfo *peImportInfo, struct secInfoHeader *secInfoHeader)
 {
-  importLibraries->tableCount = peImportInfo->tableCount;
-  secInfoHeader->importTableCount = peImportInfo->tableCount;
+    importLibraries->tableCount = peImportInfo->tableCount;
+    secInfoHeader->importTableCount = peImportInfo->tableCount;
 
-  importLibraries->importTables = calloc(importLibraries->tableCount, sizeof(struct importTable));
-  if (!importLibraries->importTables)
-    return ERR_OUT_OF_MEM;
+    importLibraries->importTables = calloc(importLibraries->tableCount, sizeof(struct importTable));
 
-  if (peImportInfo->tableCount <= 0 || peImportInfo->tableCount > 65535) {
-    fprintf(stderr, "ERROR: Invalid tableCount = %d\n", peImportInfo->tableCount);
-    return ERR_OUT_OF_MEM;
-  }
-
-  struct importTable *importTables = importLibraries->importTables;
-  importLibraries->size = (sizeof(struct importLibraries) + importLibraries->nameTableSize) - (2 * sizeof(void*));
-
-  int ret = ERR_INVALID_IMPORT_NAME;
-
-  // Allocate name list
-  char **names = calloc(importLibraries->tableCount, sizeof(char *));
-  if (!names)
-    goto cleanup_tables;
-
-  for (int64_t i = importLibraries->tableCount - 1; i >= 0; i--) {
-    importTables[i].tableIndex = i;
-
-    const uint8_t majorVer = 2;
-    const uint8_t minorVer = 0;
-    char *targetBuildVerStr = NULL;
-    char *targetHotfixVerStr = NULL;
-    char *minimumBuildVerStr = NULL;
-    char *minimumHotfixVerStr = NULL;
-    uint16_t buildVer = 0;
-    uint8_t hotfixVer = 0;
-    char *strtoulRet = NULL;
-
-    uint32_t oldNameLen = strlen(peImportInfo->tables[i].name);
-    names[i] = strtok(peImportInfo->tables[i].name, "@");
-    if (!peImportInfo->tables[i].name) {
-      fprintf(stderr, "ERROR: tables[%d].name is NULL\n", i);
-      goto cleanup_names_invalid;
+    if (!importLibraries->importTables)
+    {
+        return ERR_OUT_OF_MEM;
     }
 
-    targetBuildVerStr = strtok(NULL, ".");
-    if (!targetBuildVerStr)
-      goto cleanup_names_invalid;
-
-    if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) == oldNameLen)
-      goto cleanup_names_invalid;
-
-    buildVer = (uint16_t)strtoul(targetBuildVerStr, &strtoulRet, 10);
-    if (*strtoulRet != 0 || strtoulRet == targetBuildVerStr)
-      goto cleanup_names_invalid;
-
-    targetHotfixVerStr = strtok(NULL, "+");
-    if (!targetHotfixVerStr)
-      goto cleanup_names_invalid;
-
-    if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) + 1 + strlen(targetHotfixVerStr) == oldNameLen)
-      goto cleanup_names_invalid;
-
-    hotfixVer = (uint8_t)strtoul(targetHotfixVerStr, &strtoulRet, 10);
-    if (*strtoulRet != 0 || strtoulRet == targetHotfixVerStr)
-      goto cleanup_names_invalid;
-
-    importTables[i].targetVer =
-      ((majorVer & 0xF) << 28) |
-      ((minorVer & 0xF) << 24) |
-      (buildVer << 8) |
-      hotfixVer;
-
-    minimumBuildVerStr = strtok(NULL, ".");
-    if (!minimumBuildVerStr)
-      goto cleanup_names_invalid;
-
-    if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) + 1 + strlen(targetHotfixVerStr)
-        + 1 + strlen(minimumBuildVerStr) == oldNameLen)
-      goto cleanup_names_invalid;
-
-    buildVer = (uint16_t)strtoul(minimumBuildVerStr, &strtoulRet, 10);
-    if (*strtoulRet != 0 || strtoulRet == minimumBuildVerStr)
-      goto cleanup_names_invalid;
-
-    minimumHotfixVerStr = strtok(NULL, "\0");
-    if (!minimumHotfixVerStr)
-      goto cleanup_names_invalid;
-
-    hotfixVer = (uint8_t)strtoul(minimumHotfixVerStr, &strtoulRet, 10);
-    if (*strtoulRet != 0 || strtoulRet == minimumHotfixVerStr)
-      goto cleanup_names_invalid;
-
-    importTables[i].minimumVer =
-      ((majorVer & 0xF) << 28) |
-      ((minorVer & 0xF) << 24);
-    if (strcmp(names[i], "xboxkrnl.exe") == 0) {
-      importTables[i].unknown = 0x45DC17E0;
-    } else if (strcmp(names[i], "xam.xex") == 0) {
-      importTables[i].unknown = 0xFCA15C76;
-    } else if (strcmp(names[i], "xbdm.xex") == 0) {
-      importTables[i].unknown = 0xECEB8109;
-    } else {
-      goto cleanup_names_invalid;
+    if (peImportInfo->tableCount <= 0 || peImportInfo->tableCount > 65535)
+    {
+        fprintf(stderr, "ERROR: Invalid tableCount = %d\n", peImportInfo->tableCount);
+        return ERR_OUT_OF_MEM;
     }
 
-    importTables[i].addressCount =
-      (peImportInfo->tables[i].branchStubCount * 2) +
-      (peImportInfo->tables[i].importCount - peImportInfo->tables[i].branchStubCount);
+    struct importTable *importTables = importLibraries->importTables;
 
-    importTables[i].addresses = calloc(importTables[i].addressCount, sizeof(uint32_t));
-    if (!importTables[i].addresses)
-      goto cleanup_names_invalid;
+    importLibraries->size = (sizeof(struct importLibraries) + importLibraries->nameTableSize) - (2 * sizeof(void*));
 
-    uint32_t *addresses = importTables[i].addresses;
-    uint16_t currentAddr = 0;
+    int ret = ERR_INVALID_IMPORT_NAME;
 
-    for (uint16_t j = 0; j < peImportInfo->tables[i].importCount; j++) {
-      if (currentAddr >= importTables[i].addressCount)
-        goto cleanup_names_invalid;
+    // Allocate name list
+    char **names = calloc(importLibraries->tableCount, sizeof(char *));
 
-      addresses[currentAddr++] = peImportInfo->tables[i].imports[j].iatAddr;
-
-      if (peImportInfo->tables[i].imports[j].branchStubAddr != 0) {
-        if (currentAddr >= importTables[i].addressCount)
-          goto cleanup_names_invalid;
-        addresses[currentAddr++] = peImportInfo->tables[i].imports[j].branchStubAddr;
-      }
+    if (!names)
+    {
+        goto cleanup_tables;
     }
 
-    importTables[i].size = (sizeof(struct importTable) - sizeof(void*) + (importTables[i].addressCount * sizeof(uint32_t)));
-    importLibraries->size += importTables[i].size;
+    for (int64_t i = importLibraries->tableCount - 1; i >= 0; i--)
+    {
+        importTables[i].tableIndex = i;
 
-    struct sha1_ctx shaContext;
-    memset(&shaContext, 0, sizeof(shaContext));
-    sha1_init(&shaContext);
+        const uint8_t majorVer = 2;
+        const uint8_t minorVer = 0;
+        char *targetBuildVerStr = NULL;
+        char *targetHotfixVerStr = NULL;
+        char *minimumBuildVerStr = NULL;
+        char *minimumHotfixVerStr = NULL;
+        uint16_t buildVer = 0;
+        uint8_t hotfixVer = 0;
+        char *strtoulRet = NULL;
 
-    uint16_t addressCount = importTables[i].addressCount;
+        uint32_t oldNameLen = strlen(peImportInfo->tables[i].name);
+        names[i] = strtok(peImportInfo->tables[i].name, "@");
+
+        if (!peImportInfo->tables[i].name)
+        {
+            fprintf(stderr, "ERROR: tables[%d].name is NULL\n", i);
+            goto cleanup_names_invalid;
+        }
+
+        targetBuildVerStr = strtok(NULL, ".");
+
+        if (!targetBuildVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) == oldNameLen)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        buildVer = (uint16_t)strtoul(targetBuildVerStr, &strtoulRet, 10);
+
+        if (*strtoulRet != 0 || strtoulRet == targetBuildVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        targetHotfixVerStr = strtok(NULL, "+");
+
+        if (!targetHotfixVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) + 1 + strlen(targetHotfixVerStr) == oldNameLen)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        hotfixVer = (uint8_t)strtoul(targetHotfixVerStr, &strtoulRet, 10);
+
+        if (*strtoulRet != 0 || strtoulRet == targetHotfixVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        importTables[i].targetVer =
+            ((majorVer & 0xF) << 28) |
+            ((minorVer & 0xF) << 24) |
+            (buildVer << 8) |
+            hotfixVer;
+
+        minimumBuildVerStr = strtok(NULL, ".");
+
+        if (!minimumBuildVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        if (strlen(names[i]) + 1 + strlen(targetBuildVerStr) + 1 + strlen(targetHotfixVerStr)
+                + 1 + strlen(minimumBuildVerStr) == oldNameLen)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        buildVer = (uint16_t)strtoul(minimumBuildVerStr, &strtoulRet, 10);
+
+        if (*strtoulRet != 0 || strtoulRet == minimumBuildVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        minimumHotfixVerStr = strtok(NULL, "\0");
+
+        if (!minimumHotfixVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        hotfixVer = (uint8_t)strtoul(minimumHotfixVerStr, &strtoulRet, 10);
+
+        if (*strtoulRet != 0 || strtoulRet == minimumHotfixVerStr)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        importTables[i].minimumVer =
+            ((majorVer & 0xF) << 28) |
+            ((minorVer & 0xF) << 24);
+
+        if (strcmp(names[i], "xboxkrnl.exe") == 0)
+        {
+            importTables[i].unknown = 0x45DC17E0;
+        }
+        else if (strcmp(names[i], "xam.xex") == 0)
+        {
+            importTables[i].unknown = 0xFCA15C76;
+        }
+        else if (strcmp(names[i], "xbdm.xex") == 0)
+        {
+            importTables[i].unknown = 0xECEB8109;
+        }
+        else
+        {
+            goto cleanup_names_invalid;
+        }
+
+        importTables[i].addressCount =
+            (peImportInfo->tables[i].branchStubCount * 2) +
+            (peImportInfo->tables[i].importCount - peImportInfo->tables[i].branchStubCount);
+
+        importTables[i].addresses = calloc(importTables[i].addressCount, sizeof(uint32_t));
+
+        if (!importTables[i].addresses)
+        {
+            goto cleanup_names_invalid;
+        }
+
+        uint32_t *addresses = importTables[i].addresses;
+        uint16_t currentAddr = 0;
+
+        for (uint16_t j = 0; j < peImportInfo->tables[i].importCount; j++)
+        {
+            if (currentAddr >= importTables[i].addressCount)
+            {
+                goto cleanup_names_invalid;
+            }
+
+            addresses[currentAddr++] = peImportInfo->tables[i].imports[j].iatAddr;
+
+            if (peImportInfo->tables[i].imports[j].branchStubAddr != 0)
+            {
+                if (currentAddr >= importTables[i].addressCount)
+                {
+                    goto cleanup_names_invalid;
+                }
+
+                addresses[currentAddr++] = peImportInfo->tables[i].imports[j].branchStubAddr;
+            }
+        }
+
+        importTables[i].size = (sizeof(struct importTable) - sizeof(void*) + (importTables[i].addressCount * sizeof(uint32_t)));
+        importLibraries->size += importTables[i].size;
+
+        struct sha1_ctx shaContext;
+        memset(&shaContext, 0, sizeof(shaContext));
+        sha1_init(&shaContext);
+
+        uint16_t addressCount = importTables[i].addressCount;
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-    importTables[i].size = __builtin_bswap32(importTables[i].size);
-    importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
-    importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
-    importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
-    importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
-    for (uint16_t j = 0; j < addressCount; j++)
-      addresses[j] = __builtin_bswap32(addresses[j]);
+        importTables[i].size = __builtin_bswap32(importTables[i].size);
+        importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+        importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+        importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+        importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
+
+        for (uint16_t j = 0; j < addressCount; j++)
+        {
+            addresses[j] = __builtin_bswap32(addresses[j]);
+        }
+
 #endif
 
-    sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*) - sizeof(uint32_t), (void*)&importTables[i] + sizeof(uint32_t));
-    sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void*)addresses);
+        sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void*) - sizeof(uint32_t), (void*)&importTables[i] + sizeof(uint32_t));
+        sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void*)addresses);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-    importTables[i].size = __builtin_bswap32(importTables[i].size);
-    importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
-    importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
-    importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
-    importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
-    for (uint16_t j = 0; j < addressCount; j++)
-      addresses[j] = __builtin_bswap32(addresses[j]);
+        importTables[i].size = __builtin_bswap32(importTables[i].size);
+        importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
+        importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
+        importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
+        importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
+
+        for (uint16_t j = 0; j < addressCount; j++)
+        {
+            addresses[j] = __builtin_bswap32(addresses[j]);
+        }
+
 #endif
 
-    sha1_digest(&shaContext, 0x14, i != 0 ? importTables[i - 1].sha1 : secInfoHeader->importTableSha1);
-  }
+        sha1_digest(&shaContext, 0x14, i != 0 ? importTables[i - 1].sha1 : secInfoHeader->importTableSha1);
+    }
 
-  // Allocate offset table
-  uint32_t *nameOffsets = calloc(importLibraries->tableCount, sizeof(uint32_t));
-  if (!nameOffsets)
-    goto cleanup_names;
+    // Allocate offset table
+    uint32_t *nameOffsets = calloc(importLibraries->tableCount, sizeof(uint32_t));
 
-  for (uint32_t i = 0; i < importLibraries->tableCount; i++) {
-    nameOffsets[i] = importLibraries->nameTableSize;
-    importLibraries->nameTableSize += getNextAligned(strlen(names[i]) + 1, sizeof(uint32_t));
-  }
+    if (!nameOffsets)
+    {
+        goto cleanup_names;
+    }
 
-  importLibraries->size += importLibraries->nameTableSize;
-  importLibraries->nameTable = calloc(importLibraries->nameTableSize, sizeof(char));
-  if (!importLibraries->nameTable)
-    goto cleanup_offsets;
+    for (uint32_t i = 0; i < importLibraries->tableCount; i++)
+    {
+        nameOffsets[i] = importLibraries->nameTableSize;
+        importLibraries->nameTableSize += getNextAligned(strlen(names[i]) + 1, sizeof(uint32_t));
+    }
 
-  char *nameTable = importLibraries->nameTable;
-  for (uint32_t i = 0; i < importLibraries->tableCount; i++)
-    strcpy(&(nameTable[nameOffsets[i]]), names[i]);
+    importLibraries->size += importLibraries->nameTableSize;
+    importLibraries->nameTable = calloc(importLibraries->nameTableSize, sizeof(char));
 
-  nullAndFree((void**)&nameOffsets);
-  nullAndFree((void**)&names);
-  return SUCCESS;
+    if (!importLibraries->nameTable)
+    {
+        goto cleanup_offsets;
+    }
+
+    char *nameTable = importLibraries->nameTable;
+
+    for (uint32_t i = 0; i < importLibraries->tableCount; i++)
+    {
+        strcpy(&(nameTable[nameOffsets[i]]), names[i]);
+    }
+
+    nullAndFree((void**)&nameOffsets);
+    nullAndFree((void**)&names);
+    return SUCCESS;
 
 cleanup_offsets:
-  nullAndFree((void**)&nameOffsets);
+    nullAndFree((void**)&nameOffsets);
 cleanup_names:
-  for (uint32_t i = 0; i < importLibraries->tableCount; i++)
-   nullAndFree((void**)&(importTables[i].addresses));
+
+    for (uint32_t i = 0; i < importLibraries->tableCount; i++)
+    {
+        nullAndFree((void**)&(importTables[i].addresses));
+    }
+
 cleanup_names_invalid:
-  nullAndFree((void**)&names);
+    nullAndFree((void**)&names);
 cleanup_tables:
-  nullAndFree((void**)&(importLibraries->importTables));
-  importLibraries->importTables = NULL;
-  return ret;
+    nullAndFree((void**)&(importLibraries->importTables));
+    importLibraries->importTables = NULL;
+    return ret;
 }
 
 // STUB. TODO: Dynamically select, and/or allow user to select, flags
 void setSysFlags(uint32_t *flags)
 {
-  if (flags == NULL)
-    return;
+    if (flags == NULL)
+    {
+        return;
+    }
 
-  *flags = XEX_SYS_GAMEPAD_DISCONNECT |
-           XEX_SYS_INSECURE_SOCKETS |
-           XEX_SYS_XAM_HOOKS |
-           XEX_SYS_BACKGROUND_DL |
-           XEX_SYS_ALLOW_CONTROL_SWAP;
+    *flags = XEX_SYS_GAMEPAD_DISCONNECT |
+             XEX_SYS_INSECURE_SOCKETS |
+             XEX_SYS_XAM_HOOKS |
+             XEX_SYS_BACKGROUND_DL |
+             XEX_SYS_ALLOW_CONTROL_SWAP;
 }
 
 int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, struct optHeaderEntries *optHeaderEntries, struct optHeaders *optHeaders)
 {
-  bool importsPresent = (peData->peImportInfo.totalImportCount > 0) ? true : false;
+    bool importsPresent = (peData->peImportInfo.totalImportCount > 0) ? true : false;
 
-  optHeaderEntries->count = 4;
+    optHeaderEntries->count = 4;
 
-  if (importsPresent)
-    optHeaderEntries->count++;
+    if (importsPresent)
+    {
+        optHeaderEntries->count++;
+    }
 
-  optHeaderEntries->optHeaderEntry = calloc(optHeaderEntries->count, sizeof(struct optHeaderEntry));
-  if (optHeaderEntries->optHeaderEntry == NULL)
-    return ERR_OUT_OF_MEM;
+    optHeaderEntries->optHeaderEntry = calloc(optHeaderEntries->count, sizeof(struct optHeaderEntry));
 
-  uint32_t currentHeader = 0;
+    if (optHeaderEntries->optHeaderEntry == NULL)
+    {
+        return ERR_OUT_OF_MEM;
+    }
 
-  // NOTE: Make sure that these headers are handled IN ORDER OF ID. The loader will reject the XEX if they are not.
+    uint32_t currentHeader = 0;
 
-  // Basefile format (0x003FF)
-  setBasefileFormat(&(optHeaders->basefileFormat), secInfoHeader);
-  optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_BASEFILE_FORMAT;
-  currentHeader++;
+    // NOTE: Make sure that these headers are handled IN ORDER OF ID. The loader will reject the XEX if they are not.
 
-  // Entrypoint (0x10100)
-  optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_ENTRYPOINT;
-  optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset = secInfoHeader->baseAddr + peData->entryPoint;
-  currentHeader++;
-
-  // Import libraries (0x103FF)
-  if (importsPresent) {
-    optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_IMPORT_LIBS;
-    int ret = setImportLibsInfo(&(optHeaders->importLibraries), &(peData->peImportInfo), secInfoHeader);
-    if (ret != SUCCESS)
-      return ret;
+    // Basefile format (0x003FF)
+    setBasefileFormat(&(optHeaders->basefileFormat), secInfoHeader);
+    optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_BASEFILE_FORMAT;
     currentHeader++;
-  }
 
-  // TLS info (0x20104)
-  optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_TLS_INFO;
-  setTLSInfo(&(optHeaders->tlsInfo));
-  currentHeader++;
+    // Entrypoint (0x10100)
+    optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_ENTRYPOINT;
+    optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset = secInfoHeader->baseAddr + peData->entryPoint;
+    currentHeader++;
 
-  // System flags (0x30000)
-  optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_SYS_FLAGS;
+    // Import libraries (0x103FF)
+    if (importsPresent)
+    {
+        optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_IMPORT_LIBS;
+        int ret = setImportLibsInfo(&(optHeaders->importLibraries), &(peData->peImportInfo), secInfoHeader);
 
-  // We're using the name of the first element of the struct for clarity,
-  // it can never be an unaligned access, so ignore that warning.
-  // Also works for Clang.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
-  setSysFlags(&(optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset));
-  #pragma GCC diagnostic pop
+        if (ret != SUCCESS)
+        {
+            return ret;
+        }
 
-  //currentHeader++;
+        currentHeader++;
+    }
 
-  return SUCCESS;
+    // TLS info (0x20104)
+    optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_TLS_INFO;
+    setTLSInfo(&(optHeaders->tlsInfo));
+    currentHeader++;
+
+    // System flags (0x30000)
+    optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_SYS_FLAGS;
+
+    // We're using the name of the first element of the struct for clarity,
+    // it can never be an unaligned access, so ignore that warning.
+    // Also works for Clang.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    setSysFlags(&(optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset));
+#pragma GCC diagnostic pop
+
+    //currentHeader++;
+
+    return SUCCESS;
 }

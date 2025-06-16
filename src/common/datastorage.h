@@ -54,7 +54,7 @@
 #define XEX_OPT_ID_TLS_INFO        0x20104
 #define XEX_OPT_ID_SYS_FLAGS       0x30000
 
-// System flags  
+// System flags
 #define XEX_SYS_GAMEPAD_DISCONNECT 0x00000020
 #define XEX_SYS_INSECURE_SOCKETS   0x00000040
 #define XEX_SYS_XAM_HOOKS          0x00001000
@@ -78,172 +78,172 @@
 // Page RWX flags
 struct sections
 {
-  uint16_t count;
-  struct section *section;
+    uint16_t count;
+    struct section *section;
 };
 
 struct section
 {
-  uint8_t permFlag;
-  uint32_t virtualSize;
-  uint32_t rva;
-  uint32_t rawSize;
-  uint32_t offset;
+    uint8_t permFlag;
+    uint32_t virtualSize;
+    uint32_t rva;
+    uint32_t rawSize;
+    uint32_t offset;
 };
 
 struct peImport
 {
-  uint32_t iatAddr;
-  uint32_t branchStubAddr;
+    uint32_t iatAddr;
+    uint32_t branchStubAddr;
 };
 
 struct peImportTable
 {
-  char *name;
-  uint32_t importCount;
-  uint32_t branchStubCount;
-  struct peImport *imports;
+    char *name;
+    uint32_t importCount;
+    uint32_t branchStubCount;
+    struct peImport *imports;
 };
 
 struct peImportInfo
 {
-  uint32_t idtRVA;
-  uint32_t tableCount;
-  uint32_t totalImportCount;
-  uint32_t totalBranchStubCount;
-  struct peImportTable *tables;
+    uint32_t idtRVA;
+    uint32_t tableCount;
+    uint32_t totalImportCount;
+    uint32_t totalBranchStubCount;
+    struct peImportTable *tables;
 };
 
 struct peExportInfo
 {
-  uint16_t count;
+    uint16_t count;
 };
 
 // Data structs
 struct peData
 {
-  uint32_t size;
-  uint32_t baseAddr;
-  uint32_t entryPoint;
-  uint32_t tlsAddr;
-  uint32_t tlsSize;
-  uint32_t peHeaderOffset;
-  uint16_t numberOfSections;
-  uint32_t sectionTableSize;
-  uint32_t headerSize;
-  uint32_t pageSize;
-  uint16_t characteristics;
-  struct sections sections;
-  struct peImportInfo peImportInfo;
-  struct peExportInfo peExportInfo;
+    uint32_t size;
+    uint32_t baseAddr;
+    uint32_t entryPoint;
+    uint32_t tlsAddr;
+    uint32_t tlsSize;
+    uint32_t peHeaderOffset;
+    uint16_t numberOfSections;
+    uint32_t sectionTableSize;
+    uint32_t headerSize;
+    uint32_t pageSize;
+    uint16_t characteristics;
+    struct sections sections;
+    struct peImportInfo peImportInfo;
+    struct peExportInfo peExportInfo;
 };
 
 // Most of these are 8-byte aligned. Basefile is 4KiB aligned.
 // In order of appearance
 struct offsets
 {
-  uint32_t xexHeader;
-  uint32_t optHeaderEntries;
-  uint32_t secInfoHeader;
-  uint32_t *optHeaders;
-  uint32_t basefile;
+    uint32_t xexHeader;
+    uint32_t optHeaderEntries;
+    uint32_t secInfoHeader;
+    uint32_t *optHeaders;
+    uint32_t basefile;
 };
 
 struct __attribute__((packed)) xexHeader
 {
-  char magic[4];
-  uint32_t moduleFlags;
-  uint32_t peOffset;
-  uint32_t reserved;
-  uint32_t secInfoOffset;
-  uint32_t optHeaderCount;
+    char magic[4];
+    uint32_t moduleFlags;
+    uint32_t peOffset;
+    uint32_t reserved;
+    uint32_t secInfoOffset;
+    uint32_t optHeaderCount;
 };
 
 struct __attribute__((packed)) pageDescriptor
 {
-  uint32_t sizeAndInfo; // First 28 bits == size, last 4 == info (RO/RW/X)
-  uint8_t sha1[0x14];
+    uint32_t sizeAndInfo; // First 28 bits == size, last 4 == info (RO/RW/X)
+    uint8_t sha1[0x14];
 };
 
 struct __attribute__((packed)) secInfoHeader
 {
-  uint32_t headerSize;
-  uint32_t peSize;
-  // - IMAGE INFO -
-  uint8_t signature[0x100];
-  uint32_t imageInfoSize;
-  uint32_t imageFlags;
-  uint32_t baseAddr;
-  uint8_t imageSha1[0x14];
-  uint32_t importTableCount;
-  uint8_t importTableSha1[0x14];
-  uint8_t mediaID[0x10];
-  uint8_t aesKey[0x10];
-  uint32_t exportTableAddr;
-  uint8_t headersHash[0x14];
-  uint32_t gameRegion;
-  // - IMAGE INFO -
-  uint32_t mediaTypes;
-  uint32_t pageDescCount;
-  struct pageDescriptor *descriptors;
+    uint32_t headerSize;
+    uint32_t peSize;
+    // - IMAGE INFO -
+    uint8_t signature[0x100];
+    uint32_t imageInfoSize;
+    uint32_t imageFlags;
+    uint32_t baseAddr;
+    uint8_t imageSha1[0x14];
+    uint32_t importTableCount;
+    uint8_t importTableSha1[0x14];
+    uint8_t mediaID[0x10];
+    uint8_t aesKey[0x10];
+    uint32_t exportTableAddr;
+    uint8_t headersHash[0x14];
+    uint32_t gameRegion;
+    // - IMAGE INFO -
+    uint32_t mediaTypes;
+    uint32_t pageDescCount;
+    struct pageDescriptor *descriptors;
 };
 
 struct __attribute__((packed)) basefileFormat
 {
-  uint32_t size;
-  uint16_t encType;
-  uint16_t compType;
-  uint32_t dataSize;
-  uint32_t zeroSize;
+    uint32_t size;
+    uint16_t encType;
+    uint16_t compType;
+    uint32_t dataSize;
+    uint32_t zeroSize;
 };
 
 struct __attribute__((packed)) importTable
 {
-  uint32_t size;
-  uint8_t sha1[0x14];
-  uint32_t unknown; // Unique to each executable imported from, and always the same
-  uint32_t targetVer;
-  uint32_t minimumVer;
-  uint8_t padding;
-  uint8_t tableIndex;
-  uint16_t addressCount;
-  uint32_t *addresses; // IAT entry address followed by branch stub code address for functions, just IAT address for other symbols
+    uint32_t size;
+    uint8_t sha1[0x14];
+    uint32_t unknown; // Unique to each executable imported from, and always the same
+    uint32_t targetVer;
+    uint32_t minimumVer;
+    uint8_t padding;
+    uint8_t tableIndex;
+    uint16_t addressCount;
+    uint32_t *addresses; // IAT entry address followed by branch stub code address for functions, just IAT address for other symbols
 };
 
 struct __attribute__((packed)) importLibraries
 {
-  uint32_t size;
-  uint32_t nameTableSize;
-  uint32_t tableCount;
-  char *nameTable;
-  struct importTable *importTables;
+    uint32_t size;
+    uint32_t nameTableSize;
+    uint32_t tableCount;
+    char *nameTable;
+    struct importTable *importTables;
 };
 
 struct __attribute__((packed)) tlsInfo
 {
-  uint32_t slotCount;
-  uint32_t rawDataAddr;
-  uint32_t dataSize;
-  uint32_t rawDataSize;
+    uint32_t slotCount;
+    uint32_t rawDataAddr;
+    uint32_t dataSize;
+    uint32_t rawDataSize;
 };
 
 struct optHeaderEntries
 {
-  uint32_t count;
-  struct optHeaderEntry *optHeaderEntry;
+    uint32_t count;
+    struct optHeaderEntry *optHeaderEntry;
 };
 
 struct __attribute__((packed)) optHeaderEntry
 {
-  uint32_t id;
-  uint32_t dataOrOffset;
+    uint32_t id;
+    uint32_t dataOrOffset;
 };
 
 struct optHeaders
 {
-  struct basefileFormat basefileFormat;
-  struct importLibraries importLibraries;
-  struct tlsInfo tlsInfo;
+    struct basefileFormat basefileFormat;
+    struct importLibraries importLibraries;
+    struct tlsInfo tlsInfo;
 };
 
 // Functions used for easier memory management
@@ -266,7 +266,7 @@ void freePeDataStruct(struct peData **peData);
 void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries);
 void freeOptHeadersStruct(struct optHeaders **optHeaders);
 void freeAllMainStructs(struct offsets **offsets, struct xexHeader **xexHeader, struct secInfoHeader **secInfoHeader,
-      struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders);
+                        struct peData **peData, struct optHeaderEntries **optHeaderEntries, struct optHeaders **optHeaders);
 
 // Functions used for file data manipulation
 
