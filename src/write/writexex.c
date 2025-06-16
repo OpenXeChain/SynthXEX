@@ -86,18 +86,12 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
         size_t readRet = fread(buffer, sizeof(uint8_t), bytesToRead, pe);
 
         if(readRet != bytesToRead)
-        {
-            fprintf(stderr, "Error: fread failed at offset %u (read %zu of %zu bytes)\n", i, readRet, bytesToRead);
-            break;
-        }
+        { break; }
 
         size_t writeRet = fwrite(buffer, sizeof(uint8_t), readRet, xex);
 
         if(writeRet != readRet)
-        {
-            fprintf(stderr, "Error: fwrite failed at offset %u (wrote %zu of %zu bytes)\n", i, writeRet, readRet);
-            break;
-        }
+        { break; }
     }
 
     nullAndFree((void **)&buffer);

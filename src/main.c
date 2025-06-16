@@ -119,39 +119,39 @@ void handleError(int ret)
     switch(ret)
     {
         case ERR_UNKNOWN_DATA_REQUEST:
-            printf("%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_FILE_READ:
-            printf("%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_OUT_OF_MEM:
-            printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_MISSING_SECTION_FLAG:
-            printf("%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_UNSUPPORTED_STRUCTURE:
-            printf("%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_INVALID_RVA_OR_OFFSET:
-            printf("%s ERROR: Invalid RVA or offset found. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Invalid RVA or offset found. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_INVALID_IMPORT_NAME:
-            printf("%s ERROR: Invalid import name found. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Invalid import name found. Aborting.\n", PRINT_STEM);
             break;
 
         case ERR_DATA_OVERFLOW:
-            printf("%s ERROR: Data overflow. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Data overflow. Aborting.\n", PRINT_STEM);
             break;
 
         default:
-            printf("%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+            fprintf(stderr, "%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
             break;
     }
 }

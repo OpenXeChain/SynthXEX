@@ -47,10 +47,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
     { return ERR_OUT_OF_MEM; }
 
     if(peImportInfo->tableCount <= 0 || peImportInfo->tableCount > 65535)
-    {
-        fprintf(stderr, "ERROR: Invalid tableCount = %d\n", peImportInfo->tableCount);
-        return ERR_OUT_OF_MEM;
-    }
+    { return ERR_OUT_OF_MEM; }
 
     struct importTable *importTables = importLibraries->importTables;
 
@@ -82,10 +79,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         names[i] = strtok(peImportInfo->tables[i].name, "@");
 
         if(!peImportInfo->tables[i].name)
-        {
-            fprintf(stderr, "ERROR: tables[%d].name is NULL\n", i);
-            goto cleanup_names_invalid;
-        }
+        { goto cleanup_names_invalid; }
 
         targetBuildVerStr = strtok(NULL, ".");
 
@@ -145,7 +139,9 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 
         importTables[i].minimumVer =
             ((majorVer & 0xF) << 28) |
-            ((minorVer & 0xF) << 24);
+            ((minorVer & 0xF) << 24) |
+            (buildVer << 8) |
+            hotfixVer;
 
         if(strcmp(names[i], "xboxkrnl.exe") == 0)
         { importTables[i].unknown = 0x45DC17E0; }
