@@ -37,7 +37,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     fseek(pe, 0, SEEK_SET);
     uint16_t magic = get16BitFromPE(pe);
 
-    if (magic != 0x5A4D) // PE magic
+    if (magic != 0x5A4D || errno != SUCCESS) // PE magic
     {
         return false;
     }
@@ -46,7 +46,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     fseek(pe, 0x3C, SEEK_SET);
     size_t peHeaderOffset = get32BitFromPE(pe);
 
-    if (finalOffset < peHeaderOffset)
+    if (finalOffset < peHeaderOffset || errno != SUCCESS)
     {
         return false;
     }
@@ -59,10 +59,9 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
 
     // Check section count
     fseek(pe, peHeaderOffset + 0x6, SEEK_SET);
-
     uint16_t sectionCount = get16BitFromPE(pe);
 
-    if (sectionCount == 0)
+    if (sectionCount == 0 || errno != SUCCESS)
     {
         return false;
     }
@@ -72,7 +71,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     uint16_t sizeOfOptHdr = get16BitFromPE(pe);
 
     // 0x18 == size of COFF header, 0x28 == size of one entry in section table
-    if (finalOffset < peHeaderOffset + 0x18 + sizeOfOptHdr + (sectionCount * 0x28))
+    if (finalOffset < peHeaderOffset + 0x18 + sizeOfOptHdr + (sectionCount * 0x28) || errno != SUCCESS)
     {
         return false;
     }
@@ -83,7 +82,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     // 0x1F2 == POWERPCBE
     uint16_t machineID = get16BitFromPE(pe);
 
-    if (machineID != 0x1F2 && !skipMachineCheck)
+    if ((machineID != 0x1F2 && !skipMachineCheck) || errno != SUCCESS)
     {
         return false;
     }
@@ -93,7 +92,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
 
     uint16_t subsystem = get16BitFromPE(pe);
 
-    if (subsystem != 0xE) // 0xE == XBOX
+    if (subsystem != 0xE || errno != SUCCESS) // 0xE == XBOX
     {
         return false;
     }
@@ -104,7 +103,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     // 4KiB and 64KiB are the only valid sizes
     uint32_t pageSize = get32BitFromPE(pe);
 
-    if (pageSize != 0x1000 && pageSize != 0x10000)
+    if ((pageSize != 0x1000 && pageSize != 0x10000) || errno != SUCCESS)
     {
         return false;
     }
@@ -115,7 +114,21 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     for (uint16_t i = 0; i < sectionCount; i++)
     {
         // If raw size + raw offset exceeds file size, PE is invalid
-        if (finalOffset < get32BitFromPE(pe) + get32BitFromPE(pe))
+        uint32_t rawSize = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return false;
+        }
+
+        uint32_t rawOffset = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return false;
+        }
+
+        if (finalOffset < rawSize + rawOffset)
         {
             return false;
         }
@@ -132,8 +145,18 @@ int getSectionInfo(FILE *pe, struct sections *sections)
     fseek(pe, 0x3C, SEEK_SET);
     uint32_t peOffset = get32BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     fseek(pe, peOffset + 0x6, SEEK_SET); // 0x6 == section count
     sections->count = get16BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     sections->section = calloc(sections->count, sizeof(struct section)); // free() is called for this in setdata
 
@@ -148,12 +171,40 @@ int getSectionInfo(FILE *pe, struct sections *sections)
     {
         fseek(pe, 0x8, SEEK_CUR); // Seek to virtual size of section
         sections->section[i].virtualSize = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sections->section[i].rva = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sections->section[i].rawSize = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sections->section[i].offset = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
 
         fseek(pe, 0xC, SEEK_CUR); // Now progress to characteristics, where we will check flags
         uint32_t characteristics = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
 
         if (characteristics & PE_SECTION_FLAG_EXECUTE)
         {
@@ -189,9 +240,19 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
     fseek(pe, 0x3C, SEEK_SET);
     peData->peHeaderOffset = get32BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     // Number of sections
     fseek(pe, peData->peHeaderOffset + 0x6, SEEK_SET);
     peData->numberOfSections = get16BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     // Size of section table
     peData->sectionTableSize = peData->numberOfSections * 0x28;
@@ -201,34 +262,80 @@ int getHdrData(FILE *pe, struct peData *peData, uint8_t flags)
     fseek(pe, peData->peHeaderOffset + 0x14, SEEK_SET);
     peData->headerSize = (peData->peHeaderOffset + 1) + 0x18 + get16BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     // PE characteristics
     fseek(pe, peData->peHeaderOffset + 0x16, SEEK_SET);
     peData->characteristics = get16BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     // Entry point (RVA)
     fseek(pe, peData->peHeaderOffset + 0x28, SEEK_SET);
     peData->entryPoint = get32BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     // Base address
     fseek(pe, peData->peHeaderOffset + 0x34, SEEK_SET);
     peData->baseAddr = get32BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     // Page alignment/size
     fseek(pe, peData->peHeaderOffset + 0x38, SEEK_SET);
     peData->pageSize = get32BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     // Export tables
     fseek(pe, peData->peHeaderOffset + 0x78, SEEK_SET);
     peData->peExportInfo.count = (get32BitFromPE(pe) == 0 ? 0 : 1); // TODO: Actually read the data
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     // Import tables
     fseek(pe, peData->peHeaderOffset + 0x80, SEEK_SET);
     peData->peImportInfo.idtRVA = get32BitFromPE(pe);
 
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     // TLS status (PE TLS is currently UNSUPPORTED, so if we find it, we'll need to abort)
     fseek(pe, peData->peHeaderOffset + 0xC0, SEEK_SET);
     peData->tlsAddr = get32BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
+
     peData->tlsSize = get32BitFromPE(pe);
+
+    if(errno != SUCCESS)
+    {
+        return errno;
+    }
 
     if (peData->tlsAddr != 0 || peData->tlsSize != 0)
     {

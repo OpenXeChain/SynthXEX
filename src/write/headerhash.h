@@ -22,5 +22,4 @@
 #include "../common/crypto.h"
 #include "../common/datastorage.h"
 
-void setImportsSha1(FILE *xex);
 int setHeaderSha1(FILE *xex);

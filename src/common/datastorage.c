@@ -213,11 +213,12 @@ uint32_t offsetToRVA(uint32_t offset, struct sections *sections)
 uint32_t get32BitFromPE(FILE *pe)
 {
     uint32_t result;
+    errno = SUCCESS;
 
-    if (fread(&result, sizeof(uint32_t), 1, pe) != 1)
+    if(fread(&result, sizeof(uint32_t), 1, pe) != 1)
     {
-        fprintf(stderr, "%s Error: Failed to read 32-bit value from PE\n", PRINT_STEM);
-        exit(EXIT_FAILURE);
+        errno = ERR_FILE_READ;
+        return 0;
     }
 
     // If system is big endian, swap endianness (PE is LE)
@@ -231,11 +232,12 @@ uint32_t get32BitFromPE(FILE *pe)
 uint16_t get16BitFromPE(FILE *pe)
 {
     uint16_t result;
+    errno = SUCCESS;
 
-    if (fread(&result, sizeof(uint16_t), 1, pe) != 1)
+    if(fread(&result, sizeof(uint16_t), 1, pe) != 1)
     {
-        fprintf(stderr, "%s Error: Failed to read 16-bit value from PE\n", PRINT_STEM);
-        exit(EXIT_FAILURE);
+        errno = ERR_FILE_READ;
+        return 0;
     }
 
 #ifdef BIG_ENDIAN_SYSTEM
@@ -248,11 +250,12 @@ uint16_t get16BitFromPE(FILE *pe)
 uint32_t get32BitFromXEX(FILE *xex)
 {
     uint32_t result;
+    errno = SUCCESS;
 
-    if (fread(&result, sizeof(uint32_t), 1, xex) != 1)
+    if(fread(&result, sizeof(uint32_t), 1, xex) != 1)
     {
-        fprintf(stderr, "%s Error: Failed to read 32-bit value from XEX\n", PRINT_STEM);
-        exit(EXIT_FAILURE);
+        errno = ERR_FILE_READ;
+        return 0;
     }
 
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -265,11 +268,12 @@ uint32_t get32BitFromXEX(FILE *xex)
 uint16_t get16BitFromXEX(FILE *xex)
 {
     uint16_t result;
+    errno = SUCCESS;
 
-    if (fread(&result, sizeof(uint16_t), 1, xex) != 1)
+    if(fread(&result, sizeof(uint16_t), 1, xex) != 1)
     {
-        fprintf(stderr, "%s Error: Failed to read 16-bit value from XEX\n", PRINT_STEM);
-        exit(EXIT_FAILURE);
+        errno = ERR_FILE_READ;
+        return 0;
     }
 
 #ifdef LITTLE_ENDIAN_SYSTEM

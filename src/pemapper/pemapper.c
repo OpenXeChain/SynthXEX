@@ -44,9 +44,32 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
     for (uint16_t i = 0; i < peData->numberOfSections; i++)
     {
         sectionInfo[i].virtualSize = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sectionInfo[i].rva = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sectionInfo[i].rawSize = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
+
         sectionInfo[i].offset = get32BitFromPE(pe);
+
+        if(errno != SUCCESS)
+        {
+            return errno;
+        }
 
         if (fseek(pe, 0x18, SEEK_CUR) != 0)
         {
