@@ -23,28 +23,20 @@
 int setHeaderSha1(FILE *xex)
 {
     if(fseek(xex, 0x8, SEEK_SET) != 0)
-    {
-        return ERR_FILE_READ;
-    }
+    { return ERR_FILE_READ; }
 
     uint32_t basefileOffset = get32BitFromXEX(xex);
 
     if(errno != SUCCESS)
-    {
-        return errno;
-    }
+    { return errno; }
 
     if(fseek(xex, 0x10, SEEK_SET) != 0)
-    {
-        return ERR_FILE_READ;
-    }
+    { return ERR_FILE_READ; }
 
     uint32_t secInfoOffset = get32BitFromXEX(xex);
 
     if(errno != SUCCESS)
-    {
-        return errno;
-    }
+    { return errno; }
 
     uint32_t endOfImageInfo = secInfoOffset + 0x8 + 0x174;
     uint32_t remainingSize = basefileOffset - endOfImageInfo;
@@ -56,66 +48,57 @@ int setHeaderSha1(FILE *xex)
     uint8_t *remainderOfHeaders = malloc(remainingSize);
 
     if(!remainderOfHeaders)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    { return ERR_OUT_OF_MEM; }
 
     memset(remainderOfHeaders, 0, remainingSize);
 
     if(fseek(xex, endOfImageInfo, SEEK_SET) != 0)
     {
-        nullAndFree((void**)&remainderOfHeaders);
+        nullAndFree((void **)&remainderOfHeaders);
         return ERR_FILE_READ;
     }
 
     if(fread(remainderOfHeaders, 1, remainingSize, xex) != remainingSize)
     {
-        nullAndFree((void**)&remainderOfHeaders);
+        nullAndFree((void **)&remainderOfHeaders);
         return ERR_FILE_READ;
     }
 
     sha1_update(&shaContext, remainingSize, remainderOfHeaders);
-    nullAndFree((void**)&remainderOfHeaders);
+    nullAndFree((void **)&remainderOfHeaders);
 
     uint32_t headersLen = secInfoOffset + 0x8;
     uint8_t *headersStart = malloc(headersLen);
 
     if(!headersStart)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    { return ERR_OUT_OF_MEM; }
 
     memset(headersStart, 0, headersLen);
 
     if(fseek(xex, 0, SEEK_SET) != 0)
     {
-        nullAndFree((void**)&headersStart);
+        nullAndFree((void **)&headersStart);
         return ERR_FILE_READ;
     }
 
     if(fread(headersStart, 1, headersLen, xex) != headersLen)
     {
-        nullAndFree((void**)&headersStart);
+        nullAndFree((void **)&headersStart);
         return ERR_FILE_READ;
     }
 
     sha1_update(&shaContext, headersLen, headersStart);
-    nullAndFree((void**)&headersStart);
+    nullAndFree((void **)&headersStart);
 
     uint8_t headerHash[20];
     memset(headerHash, 0, sizeof(headerHash));
     sha1_digest(&shaContext, 20, headerHash);
 
     if(fseek(xex, secInfoOffset + 0x164, SEEK_SET) != 0)
-    {
-        return ERR_FILE_READ;
-    }
+    { return ERR_FILE_READ; }
 
     if(fwrite(headerHash, 1, 20, xex) != 20)
-    {
-        return ERR_FILE_READ;
-    }
+    { return ERR_FILE_READ; }
 
     return SUCCESS;
 }
-

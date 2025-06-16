@@ -48,12 +48,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     fseek(xex, offsets->optHeaderEntries, SEEK_SET);
 
     for(int i = 0; i < optHeaderEntries->count; i++)
-    {
-        fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex);
-    }
+    { fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex); }
 
     // Page descriptors
-    fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void*), SEEK_SET);
+    fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void *), SEEK_SET);
 
     // So we don't try to dereference an unaligned pointer
     struct pageDescriptor *descriptors = secInfoHeader->descriptors;
@@ -77,9 +75,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     uint8_t *buffer = malloc(readBufSize * sizeof(uint8_t));
 
     if(buffer == NULL)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    { return ERR_OUT_OF_MEM; }
 
     for(uint32_t i = 0; i < secInfoHeader->peSize; i += readBufSize)
     {
@@ -89,7 +85,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
         size_t readRet = fread(buffer, sizeof(uint8_t), bytesToRead, pe);
 
-        if (readRet != bytesToRead)
+        if(readRet != bytesToRead)
         {
             fprintf(stderr, "Error: fread failed at offset %u (read %zu of %zu bytes)\n", i, readRet, bytesToRead);
             break;
@@ -97,14 +93,14 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 
         size_t writeRet = fwrite(buffer, sizeof(uint8_t), readRet, xex);
 
-        if (writeRet != readRet)
+        if(writeRet != readRet)
         {
             fprintf(stderr, "Error: fwrite failed at offset %u (wrote %zu of %zu bytes)\n", i, writeRet, readRet);
             break;
         }
     }
 
-    nullAndFree((void**)&buffer);
+    nullAndFree((void **)&buffer);
 
     // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -122,7 +118,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
 #endif
 
     fseek(xex, offsets->secInfoHeader, SEEK_SET);
-    fwrite(secInfoHeader, sizeof(uint8_t), sizeof(struct secInfoHeader) - sizeof(void*), xex); // sizeof(void*) == size of page descriptor pointer at end
+    fwrite(secInfoHeader, sizeof(uint8_t), sizeof(struct secInfoHeader) - sizeof(void *), xex); // sizeof(void*) == size of page descriptor pointer at end
 
     // Optional headers
     uint32_t currentHeader = 0;
@@ -162,7 +158,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
         optHeaders->importLibraries.tableCount = __builtin_bswap32(optHeaders->importLibraries.tableCount);
 #endif
 
-        fwrite(&(optHeaders->importLibraries), sizeof(uint8_t), sizeof(struct importLibraries) - (2 * sizeof(void*)), xex);
+        fwrite(&(optHeaders->importLibraries), sizeof(uint8_t), sizeof(struct importLibraries) - (2 * sizeof(void *)), xex);
         fwrite(nameTable, sizeof(uint8_t), nameTableSize, xex);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
@@ -187,13 +183,11 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
             importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
             for(uint16_t j = 0; j < addressCount; j++)
-            {
-                addresses[j] = __builtin_bswap32(addresses[j]);
-            }
+            { addresses[j] = __builtin_bswap32(addresses[j]); }
 
 #endif
 
-            fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void*), xex);
+            fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void *), xex);
             fwrite(addresses, sizeof(uint32_t), addressCount, xex);
         }
 

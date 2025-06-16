@@ -35,9 +35,9 @@
 #define COPYRIGHT "2024-2025"
 
 #ifdef GIT_COMMIT
-#define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT
+    #define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT
 #else
-#define VERSION_STRING NAME " " VERSION
+    #define VERSION_STRING NAME " " VERSION
 #endif
 
 // Print constants

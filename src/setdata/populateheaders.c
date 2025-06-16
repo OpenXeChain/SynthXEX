@@ -25,9 +25,9 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
 
     // Module flags (type of executable)
     // Not sure if this is correct, for DLLs specifically the type overrides should probably be used instead
-    if (xexHeader->moduleFlags == 0)
+    if(xexHeader->moduleFlags == 0)
     {
-        if (peData->characteristics & PE_CHAR_FLAG_DLL)
+        if(peData->characteristics & PE_CHAR_FLAG_DLL)
         {
             xexHeader->moduleFlags |= XEX_MOD_FLAG_DLL;    // The executable is a DLL
         }
@@ -36,7 +36,7 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
             xexHeader->moduleFlags |= XEX_MOD_FLAG_TITLE;    // The executable is a regular title
         }
 
-        if (peData->peExportInfo.count > 0)
+        if(peData->peExportInfo.count > 0)
         {
             xexHeader->moduleFlags |= XEX_MOD_FLAG_EXPORTS;    // The executable exports functions
         }
@@ -65,7 +65,7 @@ int setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
     secInfoHeader->gameRegion = XEX_REG_FLAG_REGION_FREE;
     secInfoHeader->mediaTypes = 0xFFFFFFFF; // All flags set, can load from any type.
     secInfoHeader->pageDescCount = secInfoHeader->peSize / peData->pageSize; // Number of page descriptors following security info (same number of pages)
-    secInfoHeader->headerSize = (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor)) + (sizeof(struct secInfoHeader) - sizeof(void*)); // Page descriptor total size + length of rest of secinfo header (subtraction of sizeof void* is to remove pointer at end of struct from calculation)
+    secInfoHeader->headerSize = (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor)) + (sizeof(struct secInfoHeader) - sizeof(void *)); // Page descriptor total size + length of rest of secinfo header (subtraction of sizeof void* is to remove pointer at end of struct from calculation)
 
     return SUCCESS;
 }

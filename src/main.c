@@ -116,7 +116,7 @@ void dispHelp(char **argv)
 
 void handleError(int ret)
 {
-    switch (ret)
+    switch(ret)
     {
         case ERR_UNKNOWN_DATA_REQUEST:
             printf("%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
     struct optHeaderEntries *optHeaderEntries = calloc(1, sizeof(struct optHeaderEntries));
     struct optHeaders *optHeaders = calloc(1, sizeof(struct optHeaders));
 
-    if (offsets == NULL || xexHeader == NULL || secInfoHeader == NULL ||
+    if(offsets == NULL || xexHeader == NULL || secInfoHeader == NULL ||
             peData == NULL || optHeaderEntries == NULL || optHeaders == NULL)
     {
         printf("%s ERROR: Out of memory. Aborting\n", PRINT_STEM);
@@ -196,43 +196,43 @@ int main(int argc, char **argv)
     char *pePath = NULL;
     char *xexfilePath = NULL;
 
-    while ((option = getopt_long(argc, argv, "hvlsi:o:t:", longOptions, &optIndex)) != -1)
+    while((option = getopt_long(argc, argv, "hvlsi:o:t:", longOptions, &optIndex)) != -1)
     {
-        if (option == 'h' || option == '?' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
+        if(option == 'h' || option == '?' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
         {
             dispHelp(argv);
             freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                &optHeaderEntries, &optHeaders);
             return SUCCESS;
         }
-        else if (option == 'v' || (option == 0 && strcmp(longOptions[optIndex].name, "version") == 0))
+        else if(option == 'v' || (option == 0 && strcmp(longOptions[optIndex].name, "version") == 0))
         {
             dispVer();
             freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                &optHeaderEntries, &optHeaders);
             return SUCCESS;
         }
-        else if (option == 'l' || (option == 0 && strcmp(longOptions[optIndex].name, "libs") == 0))
+        else if(option == 'l' || (option == 0 && strcmp(longOptions[optIndex].name, "libs") == 0))
         {
             dispLibs();
             freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                &optHeaderEntries, &optHeaders);
             return SUCCESS;
         }
-        else if (option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
+        else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
         {
             printf("%s WARNING: Skipping machine ID check.\n", PRINT_STEM);
             skipMachineCheck = true;
         }
-        else if (option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
+        else if(option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
         {
             gotInput = true;
             pePath = malloc(strlen(optarg) + 1);
 
-            if (pePath == NULL)
+            if(pePath == NULL)
             {
                 printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-                nullAndFree((void**)&xexfilePath);
+                nullAndFree((void **)&xexfilePath);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
                 return -1;
@@ -240,15 +240,15 @@ int main(int argc, char **argv)
 
             strcpy(pePath, optarg);
         }
-        else if (option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
+        else if(option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
         {
             gotOutput = true;
             xexfilePath = malloc(strlen(optarg) + 1);
 
-            if (xexfilePath == NULL)
+            if(xexfilePath == NULL)
             {
                 printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
-                nullAndFree((void**)&pePath);
+                nullAndFree((void **)&pePath);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
                 return -1;
@@ -256,31 +256,23 @@ int main(int argc, char **argv)
 
             strcpy(xexfilePath, optarg);
         }
-        else if (option == 't' || (option == 0 && strcmp(longOptions[optIndex].name, "type") == 0))
+        else if(option == 't' || (option == 0 && strcmp(longOptions[optIndex].name, "type") == 0))
         {
-            if (strcmp(optarg, "title") == 0)
-            {
-                xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE;
-            }
-            else if (strcmp(optarg, "titledll") == 0)
-            {
-                xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE | XEX_MOD_FLAG_DLL;
-            }
-            else if (strcmp(optarg, "sysdll") == 0)
-            {
-                xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL;
-            }
-            else if (strcmp(optarg, "dll") == 0)
-            {
-                xexHeader->moduleFlags = XEX_MOD_FLAG_DLL;
-            }
+            if(strcmp(optarg, "title") == 0)
+            { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE; }
+            else if(strcmp(optarg, "titledll") == 0)
+            { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE | XEX_MOD_FLAG_DLL; }
+            else if(strcmp(optarg, "sysdll") == 0)
+            { xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL; }
+            else if(strcmp(optarg, "dll") == 0)
+            { xexHeader->moduleFlags = XEX_MOD_FLAG_DLL; }
             else
             {
                 printf("%s ERROR: Invalid type override \"%s\" (valid: title, titledll, sysdll, dll). Aborting.\n",
                        PRINT_STEM, optarg);
 
-                nullAndFree((void**)&pePath);
-                nullAndFree((void**)&xexfilePath);
+                nullAndFree((void **)&pePath);
+                nullAndFree((void **)&xexfilePath);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
                 return -1;
@@ -291,22 +283,18 @@ int main(int argc, char **argv)
     printf("%s This is %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION_STRING, COPYRIGHT);
     printf("%s This program is free/libre software. Run \"%s --version\" for info.\n\n", PRINT_STEM, argv[0]);
 
-    if (!gotInput)
+    if(!gotInput)
     {
-        if (gotOutput)
-        {
-            nullAndFree((void**)&xexfilePath);
-        }
+        if(gotOutput)
+        { nullAndFree((void **)&xexfilePath); }
 
         printf("%s ERROR: PE input expected but not found. Aborting.\n", PRINT_STEM);
         return -1;
     }
-    else if (!gotOutput)
+    else if(!gotOutput)
     {
-        if (gotInput)
-        {
-            nullAndFree((void**)&pePath);
-        }
+        if(gotInput)
+        { nullAndFree((void **)&pePath); }
 
         printf("%s ERROR: XEX file output expected but not found. Aborting.\n", PRINT_STEM);
         return -1;
@@ -314,23 +302,23 @@ int main(int argc, char **argv)
 
     FILE *pe = fopen(pePath, "rb");
 
-    if (pe == NULL)
+    if(pe == NULL)
     {
         printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", PRINT_STEM);
-        nullAndFree((void**)&pePath);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&pePath);
+        nullAndFree((void **)&xexfilePath);
         return -1;
     }
 
-    nullAndFree((void**)&pePath);
+    nullAndFree((void **)&pePath);
 
     FILE *xex = fopen(xexfilePath, "wb+");
 
-    if (xex == NULL)
+    if(xex == NULL)
     {
         printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", PRINT_STEM);
         fclose(pe);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&xexfilePath);
         return -1;
     }
 
@@ -341,10 +329,10 @@ int main(int argc, char **argv)
 
     printf("%s Validating PE file...\n", PRINT_STEM);
 
-    if (!validatePE(pe, skipMachineCheck))
+    if(!validatePE(pe, skipMachineCheck))
     {
         printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", PRINT_STEM);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&xexfilePath);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                            &optHeaderEntries, &optHeaders);
         fclose(pe);
@@ -357,10 +345,10 @@ int main(int argc, char **argv)
     printf("%s Retrieving header data from PE...\n", PRINT_STEM);
     ret = getHdrData(pe, peData, 0);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&xexfilePath);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                            &optHeaderEntries, &optHeaders);
         fclose(pe);
@@ -373,10 +361,10 @@ int main(int argc, char **argv)
     printf("%s Retrieving import data from PE...\n", PRINT_STEM);
     ret = getImports(pe, peData);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&xexfilePath);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         fclose(pe);
         fclose(xex);
@@ -388,11 +376,11 @@ int main(int argc, char **argv)
     printf("%s Creating basefile from PE...\n", PRINT_STEM);
     char *basefilePath = malloc((strlen(xexfilePath) + strlen(".basefile") + 1) * sizeof(char));
 
-    if (!basefilePath)
+    if(!basefilePath)
     {
         printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
-        nullAndFree((void**)&xexfilePath);
+        nullAndFree((void **)&xexfilePath);
         fclose(pe);
         fclose(xex);
         return -1;
@@ -402,10 +390,10 @@ int main(int argc, char **argv)
     strcat(basefilePath, ".basefile");
 
     FILE *basefile = fopen(basefilePath, "wb+");
-    nullAndFree((void**)&xexfilePath);
-    nullAndFree((void**)&basefilePath);
+    nullAndFree((void **)&xexfilePath);
+    nullAndFree((void **)&basefilePath);
 
-    if (!basefile)
+    if(!basefile)
     {
         printf("%s ERROR: Could not create basefile. Do you have write permission? Aborting.\n", PRINT_STEM);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -418,7 +406,7 @@ int main(int argc, char **argv)
     ret = mapPEToBasefile(pe, basefile, peData);
     fclose(pe);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -433,7 +421,7 @@ int main(int argc, char **argv)
     printf("%s Building security header...\n", PRINT_STEM);
     ret = setSecInfoHeader(secInfoHeader, peData);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -445,7 +433,7 @@ int main(int argc, char **argv)
     printf("%s Setting page descriptors...\n", PRINT_STEM);
     ret = setPageDescriptors(basefile, peData, secInfoHeader);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -460,7 +448,7 @@ int main(int argc, char **argv)
     printf("%s Building optional headers...\n", PRINT_STEM);
     ret = setOptHeaders(secInfoHeader, peData, optHeaderEntries, optHeaders);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -472,7 +460,7 @@ int main(int argc, char **argv)
     printf("%s Building XEX header...\n", PRINT_STEM);
     ret = setXEXHeader(xexHeader, optHeaderEntries, peData);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -488,7 +476,7 @@ int main(int argc, char **argv)
     printf("%s Aligning data...\n", PRINT_STEM);
     ret = placeStructs(offsets, xexHeader, optHeaderEntries, secInfoHeader, optHeaders);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -504,7 +492,7 @@ int main(int argc, char **argv)
     printf("%s Writing XEX...\n", PRINT_STEM);
     ret = writeXEX(xexHeader, optHeaderEntries, secInfoHeader, optHeaders, offsets, basefile, xex);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
@@ -517,7 +505,7 @@ int main(int argc, char **argv)
     printf("%s Calculating and writing header SHA1...\n", PRINT_STEM);
     ret = setHeaderSha1(xex);
 
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
     {
         handleError(ret);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);

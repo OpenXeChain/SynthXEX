@@ -30,15 +30,13 @@ int setOptHeaderOffsets(struct offsets *offsets, struct optHeaderEntries *optHea
     // Calloc because 0 values will be used to determine if a header is not present.
     offsets->optHeaders = calloc(optHeaderEntries->count, sizeof(uint32_t));
 
-    if (offsets->optHeaders == NULL)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    if(offsets->optHeaders == NULL)
+    { return ERR_OUT_OF_MEM; }
 
     // Separate header iterator, i.e. one with it's data outwith the entries
     uint32_t sepHeader = 0;
 
-    for (uint32_t i = 0; i < optHeaderEntries->count; i++)
+    for(uint32_t i = 0; i < optHeaderEntries->count; i++)
     {
         *currentOffset = getNextAligned(*currentOffset, 0x8);
 
@@ -84,16 +82,14 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
     currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers, at least 8 bytes beyond end of optional header entries
     offsets->secInfoHeader = currentOffset;
     xexHeader->secInfoOffset = currentOffset;
-    currentOffset += (sizeof(struct secInfoHeader) - sizeof(void*)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
+    currentOffset += (sizeof(struct secInfoHeader) - sizeof(void *)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
 
     // Optional headers (minus imports)
     struct importLibIdcs importLibIdcs;
     int ret = setOptHeaderOffsets(offsets, optHeaderEntries, optHeaders, &currentOffset, &importLibIdcs);
 
-    if (ret != SUCCESS)
-    {
-        return ret;
-    }
+    if(ret != SUCCESS)
+    { return ret; }
 
     currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
 
@@ -103,7 +99,7 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
     xexHeader->peOffset = currentOffset;
 
     // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-    if (optHeaders->importLibraries.tableCount > 0)
+    if(optHeaders->importLibraries.tableCount > 0)
     {
         offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
         optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];

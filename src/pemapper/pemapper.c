@@ -31,135 +31,97 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
 {
     struct sectionInfo *sectionInfo = malloc(peData->numberOfSections * sizeof(struct sectionInfo));
 
-    if (!sectionInfo)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    if(!sectionInfo)
+    { return ERR_OUT_OF_MEM; }
 
-    if (fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET) != 0)
-    {
-        return ERR_FILE_READ;
-    }
+    if(fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET) != 0)
+    { return ERR_FILE_READ; }
 
-    for (uint16_t i = 0; i < peData->numberOfSections; i++)
+    for(uint16_t i = 0; i < peData->numberOfSections; i++)
     {
         sectionInfo[i].virtualSize = get32BitFromPE(pe);
 
         if(errno != SUCCESS)
-        {
-            return errno;
-        }
+        { return errno; }
 
         sectionInfo[i].rva = get32BitFromPE(pe);
 
         if(errno != SUCCESS)
-        {
-            return errno;
-        }
+        { return errno; }
 
         sectionInfo[i].rawSize = get32BitFromPE(pe);
 
         if(errno != SUCCESS)
-        {
-            return errno;
-        }
+        { return errno; }
 
         sectionInfo[i].offset = get32BitFromPE(pe);
 
         if(errno != SUCCESS)
-        {
-            return errno;
-        }
+        { return errno; }
 
-        if (fseek(pe, 0x18, SEEK_CUR) != 0)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fseek(pe, 0x18, SEEK_CUR) != 0)
+        { return ERR_FILE_READ; }
     }
 
-    if (fseek(pe, 0, SEEK_SET) != 0)
-    {
-        return ERR_FILE_READ;
-    }
+    if(fseek(pe, 0, SEEK_SET) != 0)
+    { return ERR_FILE_READ; }
 
     uint8_t *buffer = malloc(peData->headerSize + peData->sectionTableSize);
 
-    if (!buffer)
-    {
-        return ERR_OUT_OF_MEM;
-    }
+    if(!buffer)
+    { return ERR_OUT_OF_MEM; }
 
     size_t totalHeader = peData->headerSize + peData->sectionTableSize;
 
-    if (fread(buffer, 1, totalHeader, pe) != totalHeader)
-    {
-        return ERR_FILE_READ;
-    }
+    if(fread(buffer, 1, totalHeader, pe) != totalHeader)
+    { return ERR_FILE_READ; }
 
-    if (fwrite(buffer, 1, totalHeader, basefile) != totalHeader)
-    {
-        return ERR_FILE_READ;
-    }
+    if(fwrite(buffer, 1, totalHeader, basefile) != totalHeader)
+    { return ERR_FILE_READ; }
 
-    for (uint16_t i = 0; i < peData->numberOfSections; i++)
+    for(uint16_t i = 0; i < peData->numberOfSections; i++)
     {
         buffer = realloc(buffer, sectionInfo[i].rawSize);
 
-        if (!buffer)
-        {
-            return ERR_OUT_OF_MEM;
-        }
+        if(!buffer)
+        { return ERR_OUT_OF_MEM; }
 
-        if (fseek(pe, sectionInfo[i].offset, SEEK_SET) != 0)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fseek(pe, sectionInfo[i].offset, SEEK_SET) != 0)
+        { return ERR_FILE_READ; }
 
-        if (fread(buffer, 1, sectionInfo[i].rawSize, pe) != sectionInfo[i].rawSize)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fread(buffer, 1, sectionInfo[i].rawSize, pe) != sectionInfo[i].rawSize)
+        { return ERR_FILE_READ; }
 
-        if (fseek(basefile, sectionInfo[i].rva, SEEK_SET) != 0)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fseek(basefile, sectionInfo[i].rva, SEEK_SET) != 0)
+        { return ERR_FILE_READ; }
 
-        if (fwrite(buffer, 1, sectionInfo[i].rawSize, basefile) != sectionInfo[i].rawSize)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fwrite(buffer, 1, sectionInfo[i].rawSize, basefile) != sectionInfo[i].rawSize)
+        { return ERR_FILE_READ; }
     }
 
     uint32_t currentOffset = ftell(basefile);
     uint32_t nextAligned = getNextAligned(currentOffset, peData->pageSize) - 1;
 
-    if (nextAligned != currentOffset)
+    if(nextAligned != currentOffset)
     {
         buffer = realloc(buffer, 1);
 
-        if (!buffer)
-        {
-            return ERR_OUT_OF_MEM;
-        }
+        if(!buffer)
+        { return ERR_OUT_OF_MEM; }
 
         buffer[0] = 0;
 
-        if (fseek(basefile, nextAligned, SEEK_SET) != 0)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fseek(basefile, nextAligned, SEEK_SET) != 0)
+        { return ERR_FILE_READ; }
 
-        if (fwrite(buffer, 1, 1, basefile) != 1)
-        {
-            return ERR_FILE_READ;
-        }
+        if(fwrite(buffer, 1, 1, basefile) != 1)
+        { return ERR_FILE_READ; }
     }
 
     peData->size = ftell(basefile);
 
-    nullAndFree((void**)&buffer);
-    nullAndFree((void**)&sectionInfo);
+    nullAndFree((void **)&buffer);
+    nullAndFree((void **)&sectionInfo);
 
     return SUCCESS;
 }

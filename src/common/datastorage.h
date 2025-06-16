@@ -22,11 +22,11 @@
 
 // Endian test
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define LITTLE_ENDIAN_SYSTEM
+    #define LITTLE_ENDIAN_SYSTEM
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define BIG_ENDIAN_SYSTEM
+    #define BIG_ENDIAN_SYSTEM
 #else
-#error "System is not big or little endian! SynthXEX does not support this archaic dinosaur, sorry!"
+    #error "System is not big or little endian! SynthXEX does not support this archaic dinosaur, sorry!"
 #endif
 
 // Preprocessor definitions
