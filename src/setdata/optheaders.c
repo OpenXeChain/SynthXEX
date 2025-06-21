@@ -38,6 +38,7 @@ void setTLSInfo(struct tlsInfo *tlsInfo)
 
 int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportInfo *peImportInfo, struct secInfoHeader *secInfoHeader)
 {
+    // Set table count and allocate enough memory for all tables
     importLibraries->tableCount = peImportInfo->tableCount;
     secInfoHeader->importTableCount = peImportInfo->tableCount;
 
@@ -49,8 +50,10 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
     if(peImportInfo->tableCount <= 0 || peImportInfo->tableCount > 65535)
     { return ERR_OUT_OF_MEM; }
 
+    // Use this to avoid dereferencing an unaligned pointer
     struct importTable *importTables = importLibraries->importTables;
 
+    // Initialise the size of the import libraries to just the size of the header (- 2 * sizeof(void*) to exclude addresses for internal use only)
     importLibraries->size = (sizeof(struct importLibraries) + importLibraries->nameTableSize) - (2 * sizeof(void *));
 
     int ret = ERR_INVALID_IMPORT_NAME;
@@ -61,10 +64,15 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
     if(!names)
     { goto cleanup_tables; }
 
+    // Populate each table, then compute it's hash and store in the previous table
     for(int64_t i = importLibraries->tableCount - 1; i >= 0; i--)
     {
+        // Set the table index field to the current index
         importTables[i].tableIndex = i;
 
+        // Extract the name, target, and minimum versions from the name string
+        // Major and minor version are always 2 and 0, respectively
+        // Strings are definitely null-terminated as otherwise they couldn't have been read in
         const uint8_t majorVer = 2;
         const uint8_t minorVer = 0;
         char *targetBuildVerStr = NULL;
@@ -75,24 +83,26 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         uint8_t hotfixVer = 0;
         char *strtoulRet = NULL;
 
+        // Get the name
         uint32_t oldNameLen = strlen(peImportInfo->tables[i].name);
         names[i] = strtok(peImportInfo->tables[i].name, "@");
 
         if(!peImportInfo->tables[i].name)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // Encountered '\0', not '@'
 
+        // Target versions first
         targetBuildVerStr = strtok(NULL, ".");
 
         if(!targetBuildVerStr)
         { goto cleanup_names_invalid; }
 
         if(strlen(names[i]) + 1 + strlen(targetBuildVerStr) == oldNameLen)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // Encountered null terminator instead of '.'
 
         buildVer = (uint16_t)strtoul(targetBuildVerStr, &strtoulRet, 10);
 
         if(*strtoulRet != 0 || strtoulRet == targetBuildVerStr)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // Encountered a non-number, or string was empty
 
         targetHotfixVerStr = strtok(NULL, "+");
 
@@ -107,25 +117,27 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         if(*strtoulRet != 0 || strtoulRet == targetHotfixVerStr)
         { goto cleanup_names_invalid; }
 
+        // Now pack these into the target version bitfield
         importTables[i].targetVer =
             ((majorVer & 0xF) << 28) |
             ((minorVer & 0xF) << 24) |
             (buildVer << 8) |
             hotfixVer;
 
+        // Now onto the minimum versions, this works much the same
         minimumBuildVerStr = strtok(NULL, ".");
 
         if(!minimumBuildVerStr)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // No more tokens
 
         if(strlen(names[i]) + 1 + strlen(targetBuildVerStr) + 1 + strlen(targetHotfixVerStr)
                 + 1 + strlen(minimumBuildVerStr) == oldNameLen)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // Encountered null terminator instead of '.'
 
         buildVer = (uint16_t)strtoul(minimumBuildVerStr, &strtoulRet, 10);
 
         if(*strtoulRet != 0 || strtoulRet == minimumBuildVerStr)
-        { goto cleanup_names_invalid; }
+        { goto cleanup_names_invalid; } // Encountered a non-number, or string was empty
 
         minimumHotfixVerStr = strtok(NULL, "\0");
 
@@ -137,12 +149,14 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         if(*strtoulRet != 0 || strtoulRet == minimumHotfixVerStr)
         { goto cleanup_names_invalid; }
 
+        // Now pack these into the minimum version bitfield
         importTables[i].minimumVer =
             ((majorVer & 0xF) << 28) |
             ((minorVer & 0xF) << 24) |
             (buildVer << 8) |
             hotfixVer;
 
+        // Hardcode a currently unknown value. TODO: find out how this is calculated.
         if(strcmp(names[i], "xboxkrnl.exe") == 0)
         { importTables[i].unknown = 0x45DC17E0; }
         else if(strcmp(names[i], "xam.xex") == 0)
@@ -152,18 +166,21 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         else
         { goto cleanup_names_invalid; }
 
+        // Determine the number of addresses (2 for functions, 1 for everything else)
         importTables[i].addressCount =
             (peImportInfo->tables[i].branchStubCount * 2) +
             (peImportInfo->tables[i].importCount - peImportInfo->tables[i].branchStubCount);
 
+        // Allocate enough memory for the addresses
         importTables[i].addresses = calloc(importTables[i].addressCount, sizeof(uint32_t));
 
         if(!importTables[i].addresses)
         { goto cleanup_names_invalid; }
 
-        uint32_t *addresses = importTables[i].addresses;
+        uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
         uint16_t currentAddr = 0;
 
+        // Populate the addresses
         for(uint16_t j = 0; j < peImportInfo->tables[i].importCount; j++)
         {
             if(currentAddr >= importTables[i].addressCount)
@@ -180,15 +197,20 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
             }
         }
 
+        // Determine the total size, in bytes, of the current table (- sizeof(void*) to exclude address to addresses at the end)
         importTables[i].size = (sizeof(struct importTable) - sizeof(void *) + (importTables[i].addressCount * sizeof(uint32_t)));
         importLibraries->size += importTables[i].size;
 
+        // Init sha1 hash
         struct sha1_ctx shaContext;
         memset(&shaContext, 0, sizeof(shaContext));
         sha1_init(&shaContext);
 
+        // On little endian this ensures the byteswapped address count doesn't cause any trouble when using it.
+        // On big endian it's pointless but here so the code isn't too complex with differences between endianness.
         uint16_t addressCount = importTables[i].addressCount;
 
+        // If we're on a little endian system, swap everything into big endian for hashing
 #ifdef LITTLE_ENDIAN_SYSTEM
         importTables[i].size = __builtin_bswap32(importTables[i].size);
         importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
@@ -196,14 +218,17 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
         importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
+        // Byteswap the addresses
         for(uint16_t j = 0; j < addressCount; j++)
         { addresses[j] = __builtin_bswap32(addresses[j]); }
 
 #endif
-
+        // - sizeof(void*) to exclude the address to the addresses at the end (not part of the XEX format)
+        // +/- sizeof(uint32_t) to exclude table size from hash
         sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void *) - sizeof(uint32_t), (void *)&importTables[i] + sizeof(uint32_t));
         sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void *)addresses);
 
+        // If we're on a little endian system, swap everything back into little endian
 #ifdef LITTLE_ENDIAN_SYSTEM
         importTables[i].size = __builtin_bswap32(importTables[i].size);
         importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
@@ -211,6 +236,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
         importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
 
+        // Byteswap the addresses
         for(uint16_t j = 0; j < addressCount; j++)
         { addresses[j] = __builtin_bswap32(addresses[j]); }
 
@@ -237,8 +263,10 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
     if(!importLibraries->nameTable)
     { goto cleanup_offsets; }
 
+    // Use this to avoid dereferencing an unaligned pointer
     char *nameTable = importLibraries->nameTable;
 
+    // Populate the name table
     for(uint32_t i = 0; i < importLibraries->tableCount; i++)
     { strcpy(&(nameTable[nameOffsets[i]]), names[i]); }
 
