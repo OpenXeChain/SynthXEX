@@ -69,7 +69,7 @@ execute_process(
 )
 
 # Only use the result from the git command if it's a valid version string
-if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-[0-9a-z]+)?$")
+if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-[0-9a-f]+)?$")
   add_compile_definitions(SYNTHXEX_VERSION="${VERSION_STRING}")
 else()
   add_compile_definitions(SYNTHXEX_VERSION="v0.0.3") # Only used as a fallback
