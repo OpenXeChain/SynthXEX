@@ -38,7 +38,19 @@ file(GLOB_RECURSE allsources
 add_executable(synthxex ${allsources})
 target_include_directories(synthxex PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
+# Debug/release build handling
+if(GENERATOR_IS_MULTI_CONFIG)
+  set(SYNTHXEX_BUILD_TYPE "MultiConf") # Multi-config generators handle debug build options themselves, don't apply ours
+else()
+  if(CMAKE_BUILD_TYPE)
+    set(SYNTHXEX_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+  else()
+    set(SYNTHXEX_BUILD_TYPE "Debug")
+  endif()
+endif()
+
+if(${SYNTHXEX_BUILD_TYPE} MATCHES "Deb")
+  add_compile_definitions(_DEBUG=1)
 
   if(NOT MINGW)
     target_compile_options(synthxex PRIVATE -O0 -g -fsanitize=address -fsanitize=undefined)
@@ -46,15 +58,21 @@ if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
   else()
     target_compile_options(synthxex PRIVATE -O0 -g)
   endif()
+endif()
 
-  execute_process(
-    COMMAND git rev-parse --short HEAD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_COMMIT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+# Set the version
+execute_process(
+  COMMAND git describe HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE VERSION_STRING
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
-  add_compile_definitions(GIT_COMMIT="${GIT_COMMIT}")
+# Only use the result from the git command if it's a valid version string
+if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-[0-9a-z]+)?$")
+  add_compile_definitions(SYNTHXEX_VERSION="${VERSION_STRING}")
+else()
+  add_compile_definitions(SYNTHXEX_VERSION="v0.0.3") # Only used as a fallback
 endif()
 
 # Setting install target settings...

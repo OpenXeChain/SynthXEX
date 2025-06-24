@@ -53,7 +53,7 @@ int setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
     secInfoHeader->peSize = peData->size;
 
     // Setting signature (just a SynthXEX version identifier)
-    strcpy(secInfoHeader->signature, VERSION_STRING);
+    strcpy(secInfoHeader->signature, SYNTHXEX_VERSION_STRING);
 
     secInfoHeader->imageInfoSize = 0x174; // Image info size is always 0x174
     secInfoHeader->imageFlags = (peData->pageSize == 0x1000 ? XEX_IMG_FLAG_4KIB_PAGES : 0) | XEX_IMG_FLAG_REGION_FREE; // If page size is 4KiB (small pages), set that flag

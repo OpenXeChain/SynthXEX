@@ -90,8 +90,8 @@ void dispLibs()
 
 void dispVer()
 {
-    printf("\n%s\n\nThe XEX builder of the FreeChainXenon project\n\n", VERSION_STRING);
-    printf("Copyright (c) %s Aiden Isik\n\nThis program is free software: you can redistribute it and/or modify\n", COPYRIGHT);
+    printf("\n%s\n\nThe XEX builder of the FreeChainXenon project\n\n", SYNTHXEX_VERSION_STRING);
+    printf("Copyright (c) %s Aiden Isik\n\nThis program is free software: you can redistribute it and/or modify\n", SYNTHXEX_COPYRIGHT);
     printf("it under the terms of the GNU Affero General Public License as published by\n");
     printf("the Free Software Foundation, either version 3 of the License, or\n");
     printf("(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\n");
@@ -119,39 +119,39 @@ void handleError(int ret)
     switch(ret)
     {
         case ERR_UNKNOWN_DATA_REQUEST:
-            fprintf(stderr, "%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Internal error getting data from PE file. THIS IS A BUG, please report it. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_FILE_READ:
-            fprintf(stderr, "%s ERROR: Failed to read data from PE file. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Failed to read data from PE file. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_OUT_OF_MEM:
-            fprintf(stderr, "%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_MISSING_SECTION_FLAG:
-            fprintf(stderr, "%s ERROR: R/W/X flag missing from PE section. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: R/W/X flag missing from PE section. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_UNSUPPORTED_STRUCTURE:
-            fprintf(stderr, "%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Encountered an unsupported data structure in PE. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_INVALID_RVA_OR_OFFSET:
-            fprintf(stderr, "%s ERROR: Invalid RVA or offset found. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Invalid RVA or offset found. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_INVALID_IMPORT_NAME:
-            fprintf(stderr, "%s ERROR: Invalid import name found. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Invalid import name found. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         case ERR_DATA_OVERFLOW:
-            fprintf(stderr, "%s ERROR: Data overflow. Aborting.\n", PRINT_STEM);
+            fprintf(stderr, "%s ERROR: Data overflow. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
         default:
-            fprintf(stderr, "%s ERROR: Unknown error: %d. Aborting.\n", PRINT_STEM, ret);
+            fprintf(stderr, "%s ERROR: Unknown error: %d. Aborting.\n", SYNTHXEX_PRINT_STEM, ret);
             break;
     }
 }
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     if(offsets == NULL || xexHeader == NULL || secInfoHeader == NULL ||
             peData == NULL || optHeaderEntries == NULL || optHeaders == NULL)
     {
-        printf("%s ERROR: Out of memory. Aborting\n", PRINT_STEM);
+        printf("%s ERROR: Out of memory. Aborting\n", SYNTHXEX_PRINT_STEM);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                            &optHeaderEntries, &optHeaders);
         return -1;
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
         }
         else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
         {
-            printf("%s WARNING: Skipping machine ID check.\n", PRINT_STEM);
+            printf("%s WARNING: Skipping machine ID check.\n", SYNTHXEX_PRINT_STEM);
             skipMachineCheck = true;
         }
         else if(option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 
             if(pePath == NULL)
             {
-                printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+                printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
                 nullAndFree((void **)&xexfilePath);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 
             if(xexfilePath == NULL)
             {
-                printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+                printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
                 nullAndFree((void **)&pePath);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
             else
             {
                 printf("%s ERROR: Invalid type override \"%s\" (valid: title, titledll, sysdll, dll). Aborting.\n",
-                       PRINT_STEM, optarg);
+                       SYNTHXEX_PRINT_STEM, optarg);
 
                 nullAndFree((void **)&pePath);
                 nullAndFree((void **)&xexfilePath);
@@ -280,15 +280,16 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%s This is %s. Copyright (c) %s Aiden Isik.\n", PRINT_STEM, VERSION_STRING, COPYRIGHT);
-    printf("%s This program is free/libre software. Run \"%s --version\" for info.\n\n", PRINT_STEM, argv[0]);
+    printf("%s This is %s. Copyright (c) %s Aiden Isik.\n", SYNTHXEX_PRINT_STEM, SYNTHXEX_VERSION_STRING, SYNTHXEX_COPYRIGHT);
+    printf("%s This program is free/libre software. Run \"%s --version\" for info.\n\n", SYNTHXEX_PRINT_STEM, argv[0]);
 
     if(!gotInput)
     {
         if(gotOutput)
         { nullAndFree((void **)&xexfilePath); }
 
-        printf("%s ERROR: PE input expected but not found. Aborting.\n", PRINT_STEM);
+	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        printf("%s ERROR: PE input expected but not found. Aborting.\n", SYNTHXEX_PRINT_STEM);
         return -1;
     }
     else if(!gotOutput)
@@ -296,7 +297,8 @@ int main(int argc, char **argv)
         if(gotInput)
         { nullAndFree((void **)&pePath); }
 
-        printf("%s ERROR: XEX file output expected but not found. Aborting.\n", PRINT_STEM);
+	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        printf("%s ERROR: XEX file output expected but not found. Aborting.\n", SYNTHXEX_PRINT_STEM);
         return -1;
     }
 
@@ -304,9 +306,10 @@ int main(int argc, char **argv)
 
     if(pe == NULL)
     {
-        printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", PRINT_STEM);
+        printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", SYNTHXEX_PRINT_STEM);
         nullAndFree((void **)&pePath);
         nullAndFree((void **)&xexfilePath);
+	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         return -1;
     }
 
@@ -316,9 +319,10 @@ int main(int argc, char **argv)
 
     if(xex == NULL)
     {
-        printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", PRINT_STEM);
+        printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", SYNTHXEX_PRINT_STEM);
         fclose(pe);
         nullAndFree((void **)&xexfilePath);
+	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         return -1;
     }
 
@@ -327,38 +331,36 @@ int main(int argc, char **argv)
 
     int ret = 0;
 
-    printf("%s Validating PE file...\n", PRINT_STEM);
+    printf("%s Validating PE file...\n", SYNTHXEX_PRINT_STEM);
 
     if(!validatePE(pe, skipMachineCheck))
     {
-        printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", PRINT_STEM);
+        printf("%s ERROR: Input PE is not Xbox 360 PE. Aborting.\n", SYNTHXEX_PRINT_STEM);
         nullAndFree((void **)&xexfilePath);
-        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
-                           &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         fclose(pe);
         fclose(xex);
         return -1;
     }
 
-    printf("%s PE valid!\n", PRINT_STEM);
+    printf("%s PE valid!\n", SYNTHXEX_PRINT_STEM);
 
-    printf("%s Retrieving header data from PE...\n", PRINT_STEM);
+    printf("%s Retrieving header data from PE...\n", SYNTHXEX_PRINT_STEM);
     ret = getHdrData(pe, peData, 0);
 
     if(ret != SUCCESS)
     {
         handleError(ret);
         nullAndFree((void **)&xexfilePath);
-        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
-                           &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         fclose(pe);
         fclose(xex);
         return -1;
     }
 
-    printf("%s Got header data from PE!\n", PRINT_STEM);
+    printf("%s Got header data from PE!\n", SYNTHXEX_PRINT_STEM);
 
-    printf("%s Retrieving import data from PE...\n", PRINT_STEM);
+    printf("%s Retrieving import data from PE...\n", SYNTHXEX_PRINT_STEM);
     ret = getImports(pe, peData);
 
     if(ret != SUCCESS)
@@ -371,14 +373,14 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("%s Got import data from PE!\n", PRINT_STEM);
+    printf("%s Got import data from PE!\n", SYNTHXEX_PRINT_STEM);
 
-    printf("%s Creating basefile from PE...\n", PRINT_STEM);
+    printf("%s Creating basefile from PE...\n", SYNTHXEX_PRINT_STEM);
     char *basefilePath = malloc((strlen(xexfilePath) + strlen(".basefile") + 1) * sizeof(char));
 
     if(!basefilePath)
     {
-        printf("%s ERROR: Out of memory. Aborting.\n", PRINT_STEM);
+        printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         nullAndFree((void **)&xexfilePath);
         fclose(pe);
@@ -395,7 +397,7 @@ int main(int argc, char **argv)
 
     if(!basefile)
     {
-        printf("%s ERROR: Could not create basefile. Do you have write permission? Aborting.\n", PRINT_STEM);
+        printf("%s ERROR: Could not create basefile. Do you have write permission? Aborting.\n", SYNTHXEX_PRINT_STEM);
         freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         fclose(pe);
         fclose(xex);
@@ -415,10 +417,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("%s Created basefile!\n", PRINT_STEM);
+    printf("%s Created basefile!\n", SYNTHXEX_PRINT_STEM);
 
     // Setting final XEX data structs
-    printf("%s Building security header...\n", PRINT_STEM);
+    printf("%s Building security header...\n", SYNTHXEX_PRINT_STEM);
     ret = setSecInfoHeader(secInfoHeader, peData);
 
     if(ret != SUCCESS)
@@ -430,7 +432,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("%s Setting page descriptors...\n", PRINT_STEM);
+    printf("%s Setting page descriptors...\n", SYNTHXEX_PRINT_STEM);
     ret = setPageDescriptors(basefile, peData, secInfoHeader);
 
     if(ret != SUCCESS)
@@ -445,7 +447,7 @@ int main(int argc, char **argv)
     // Done with this now
     freeSectionsStruct(&(peData->sections));
 
-    printf("%s Building optional headers...\n", PRINT_STEM);
+    printf("%s Building optional headers...\n", SYNTHXEX_PRINT_STEM);
     ret = setOptHeaders(secInfoHeader, peData, optHeaderEntries, optHeaders);
 
     if(ret != SUCCESS)
@@ -457,7 +459,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("%s Building XEX header...\n", PRINT_STEM);
+    printf("%s Building XEX header...\n", SYNTHXEX_PRINT_STEM);
     ret = setXEXHeader(xexHeader, optHeaderEntries, peData);
 
     if(ret != SUCCESS)
@@ -473,7 +475,7 @@ int main(int argc, char **argv)
     freePeImportInfoStruct(&(peData->peImportInfo));
 
     // Setting data positions
-    printf("%s Aligning data...\n", PRINT_STEM);
+    printf("%s Aligning data...\n", SYNTHXEX_PRINT_STEM);
     ret = placeStructs(offsets, xexHeader, optHeaderEntries, secInfoHeader, optHeaders);
 
     if(ret != SUCCESS)
@@ -489,7 +491,7 @@ int main(int argc, char **argv)
     freePeDataStruct(&peData);
 
     // Write out all of the XEX data to file
-    printf("%s Writing XEX...\n", PRINT_STEM);
+    printf("%s Writing XEX...\n", SYNTHXEX_PRINT_STEM);
     ret = writeXEX(xexHeader, optHeaderEntries, secInfoHeader, optHeaders, offsets, basefile, xex);
 
     if(ret != SUCCESS)
@@ -502,7 +504,7 @@ int main(int argc, char **argv)
     }
 
     // Final pass (sets & writes header hash)
-    printf("%s Calculating and writing header SHA1...\n", PRINT_STEM);
+    printf("%s Calculating and writing header SHA1...\n", SYNTHXEX_PRINT_STEM);
     ret = setHeaderSha1(xex);
 
     if(ret != SUCCESS)
@@ -514,7 +516,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("%s Header SHA1 written!\n", PRINT_STEM);
+    printf("%s Header SHA1 written!\n", SYNTHXEX_PRINT_STEM);
 
     // Free files
     fclose(xex);
@@ -522,6 +524,6 @@ int main(int argc, char **argv)
     // Free structs
     freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
 
-    printf("%s XEX built. Have a nice day!\n\n", PRINT_STEM);
+    printf("%s XEX built. Have a nice day!\n\n", SYNTHXEX_PRINT_STEM);
     return SUCCESS;
 }

@@ -29,19 +29,18 @@
 #define freeOnlyUseThisFunctionInTheNullAndFreeFunctionNowhereElse free
 #pragma GCC poison free
 
-// Program identifiers
-#define NAME "SynthXEX"
-#define VERSION "v0.0.4"
-#define COPYRIGHT "2024-2025"
-
-#ifdef GIT_COMMIT
-    #define VERSION_STRING NAME " " VERSION "-dev-" GIT_COMMIT
+// Program identifiers (version set in CMakeLists.txt)
+#if defined(DEBUG) || defined(_DEBUG)
+    #define SYNTHXEX_NAME "SynthXEX-Debug"
 #else
-    #define VERSION_STRING NAME " " VERSION
+    #define SYNTHXEX_NAME "SynthXEX"
 #endif
 
+#define SYNTHXEX_COPYRIGHT "2024-2025"
+#define SYNTHXEX_VERSION_STRING SYNTHXEX_NAME " " SYNTHXEX_VERSION
+
 // Print constants
-#define PRINT_STEM "SynthXEX>"
+#define SYNTHXEX_PRINT_STEM SYNTHXEX_NAME ">"
 
 // Return values
 #define SUCCESS 0
@@ -55,5 +54,3 @@
 #define ERR_INVALID_RVA_OR_OFFSET -7
 #define ERR_INVALID_IMPORT_NAME -8
 #define ERR_DATA_OVERFLOW -9
-
-void infoPrint(char *str);
