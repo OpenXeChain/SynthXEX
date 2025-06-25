@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.25.1)
+cmake_minimum_required(VERSION 3.24.2)
 project(synthxex)
 
 if(MSVC)
@@ -62,14 +62,14 @@ endif()
 
 # Set the version
 execute_process(
-  COMMAND git describe HEAD
+  COMMAND git describe --tags --dirty
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   OUTPUT_VARIABLE VERSION_STRING
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
 # Only use the result from the git command if it's a valid version string
-if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-[0-9a-f]+)?$")
+if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-g[0-9a-f]+(-dirty)?)?$")
   add_compile_definitions(SYNTHXEX_VERSION="${VERSION_STRING}")
 else()
   add_compile_definitions(SYNTHXEX_VERSION="v0.0.3") # Only used as a fallback
