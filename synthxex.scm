@@ -95,7 +95,7 @@
     '(#:build-type "Debug" ; This is the version of the package definition bundled in the git repo, so we should build a debug version
       #:tests? #f)) ; We don't have a test suite
    (native-inputs
-     (list git)) ; Needed for version number generation by cmake
+    (list git)) ; Needed for version number generation by cmake
    (synopsis "XEX2 generator for the Xbox 360 games console")
    (description "SynthXEX is an XEX2 generator, the final component of development toolchains for the Xbox 360 games console.")
    (home-page "https://git.aidenisik.scot/FreeChainXenon/SynthXEX")
