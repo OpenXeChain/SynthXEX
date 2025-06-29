@@ -21,7 +21,7 @@
 uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t page)
 {
     uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
-    uint32_t currentOffset = page * pageSize;
+    uint32_t currentOffset = page *pageSize;
 
     for(int32_t i = peData->sections.count - 1; i >= 0; i--)
         if(currentOffset >= peData->sections.section[i].rva)
@@ -48,7 +48,7 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
         struct sha1_ctx shaContext;
         sha1_init(&shaContext);
 
-        if(fseek(pe, i * pageSize, SEEK_SET) != 0)
+        if(fseek(pe, i *pageSize, SEEK_SET) != 0)
         { return ERR_FILE_READ; }
 
         uint8_t *page = malloc(pageSize);

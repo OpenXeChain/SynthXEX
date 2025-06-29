@@ -198,7 +198,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         }
 
         // Determine the total size, in bytes, of the current table (- sizeof(void*) to exclude address to addresses at the end)
-        importTables[i].size = (sizeof(struct importTable) - sizeof(void *) + (importTables[i].addressCount * sizeof(uint32_t)));
+        importTables[i].size = (sizeof(struct importTable) - sizeof(void *) + (importTables[i].addressCount *sizeof(uint32_t)));
         importLibraries->size += importTables[i].size;
 
         // Init sha1 hash
@@ -226,7 +226,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         // - sizeof(void*) to exclude the address to the addresses at the end (not part of the XEX format)
         // +/- sizeof(uint32_t) to exclude table size from hash
         sha1_update(&shaContext, sizeof(struct importTable) - sizeof(void *) - sizeof(uint32_t), (void *)&importTables[i] + sizeof(uint32_t));
-        sha1_update(&shaContext, addressCount * sizeof(uint32_t), (void *)addresses);
+        sha1_update(&shaContext, addressCount *sizeof(uint32_t), (void *)addresses);
 
         // If we're on a little endian system, swap everything back into little endian
 #ifdef LITTLE_ENDIAN_SYSTEM

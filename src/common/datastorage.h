@@ -93,13 +93,14 @@ struct section
 
 struct peImport
 {
-    uint32_t iatAddr;
+    uint32_t iatAddr; // Also contains a flag denoting whether this is a function or variable
     uint32_t branchStubAddr;
 };
 
 struct peImportTable
 {
     char *name;
+    uint32_t rva;
     uint32_t importCount;
     uint32_t branchStubCount;
     struct peImport *imports;

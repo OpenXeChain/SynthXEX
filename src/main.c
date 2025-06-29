@@ -126,6 +126,10 @@ void handleError(int ret)
             fprintf(stderr, "%s ERROR: Failed to read data from PE file. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
 
+        case ERR_FILE_WRITE:
+            fprintf(stderr, "%s ERROR: Failed to write data to file. Aborting.\n", SYNTHXEX_PRINT_STEM);
+            break;
+
         case ERR_OUT_OF_MEM:
             fprintf(stderr, "%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
             break;
@@ -288,7 +292,7 @@ int main(int argc, char **argv)
         if(gotOutput)
         { nullAndFree((void **)&xexfilePath); }
 
-	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         printf("%s ERROR: PE input expected but not found. Aborting.\n", SYNTHXEX_PRINT_STEM);
         return -1;
     }
@@ -297,7 +301,7 @@ int main(int argc, char **argv)
         if(gotInput)
         { nullAndFree((void **)&pePath); }
 
-	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         printf("%s ERROR: XEX file output expected but not found. Aborting.\n", SYNTHXEX_PRINT_STEM);
         return -1;
     }
@@ -309,7 +313,7 @@ int main(int argc, char **argv)
         printf("%s ERROR: Failed to open PE file. Do you have read permissions? Aborting.\n", SYNTHXEX_PRINT_STEM);
         nullAndFree((void **)&pePath);
         nullAndFree((void **)&xexfilePath);
-	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         return -1;
     }
 
@@ -322,7 +326,7 @@ int main(int argc, char **argv)
         printf("%s ERROR: Failed to create XEX file. Do you have write permissions? Aborting.\n", SYNTHXEX_PRINT_STEM);
         fclose(pe);
         nullAndFree((void **)&xexfilePath);
-	freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
+        freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData, &optHeaderEntries, &optHeaders);
         return -1;
     }
 

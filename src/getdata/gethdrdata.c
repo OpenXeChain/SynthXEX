@@ -35,7 +35,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
     fseek(pe, 0, SEEK_SET);
     uint16_t magic = get16BitFromPE(pe);
 
-    if(magic != 0x5A4D || errno != SUCCESS)  // PE magic
+    if(magic != 0x5A4D || errno != SUCCESS) // PE magic
     { return false; }
 
     // Check if pointer to PE header is valid
@@ -78,7 +78,7 @@ bool validatePE(FILE *pe, bool skipMachineCheck) // True if valid, else false
 
     uint16_t subsystem = get16BitFromPE(pe);
 
-    if(subsystem != 0xE || errno != SUCCESS)  // 0xE == XBOX
+    if(subsystem != 0xE || errno != SUCCESS) // 0xE == XBOX
     { return false; }
 
     // Check page size/alignment
@@ -168,7 +168,7 @@ int getSectionInfo(FILE *pe, struct sections *sections)
 
         if(characteristics & PE_SECTION_FLAG_EXECUTE)
         {
-            sections->section[i].permFlag = XEX_SECTION_CODE | 0b10000;    // | 0b(1)0000 == include size of 1
+            sections->section[i].permFlag = XEX_SECTION_CODE | 0b10000; // | 0b(1)0000 == include size of 1
         }
         else if(characteristics & PE_SECTION_FLAG_WRITE || characteristics & PE_SECTION_FLAG_DISCARDABLE)
         { sections->section[i].permFlag = XEX_SECTION_RWDATA | 0b10000; }

@@ -76,13 +76,13 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
 
     // Optional header entries (no alignment, they immediately follow XEX header)
     offsets->optHeaderEntries = currentOffset;
-    currentOffset += optHeaderEntries->count * sizeof(struct optHeaderEntry);
+    currentOffset += optHeaderEntries->count *sizeof(struct optHeaderEntry);
 
     // Security header
     currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers, at least 8 bytes beyond end of optional header entries
     offsets->secInfoHeader = currentOffset;
     xexHeader->secInfoOffset = currentOffset;
-    currentOffset += (sizeof(struct secInfoHeader) - sizeof(void *)) + (secInfoHeader->pageDescCount * sizeof(struct pageDescriptor));
+    currentOffset += (sizeof(struct secInfoHeader) - sizeof(void *)) + (secInfoHeader->pageDescCount *sizeof(struct pageDescriptor));
 
     // Optional headers (minus imports)
     struct importLibIdcs importLibIdcs;

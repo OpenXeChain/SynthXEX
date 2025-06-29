@@ -72,7 +72,7 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     fseek(xex, offsets->basefile, SEEK_SET);
 
     uint16_t readBufSize = 0x1000; // Reading in 4KiB at a time to avoid excessive memory usage
-    uint8_t *buffer = malloc(readBufSize * sizeof(uint8_t));
+    uint8_t *buffer = malloc(readBufSize *sizeof(uint8_t));
 
     if(buffer == NULL)
     { return ERR_OUT_OF_MEM; }

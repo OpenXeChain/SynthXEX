@@ -26,14 +26,54 @@ struct sectionInfo
     uint32_t offset;
 };
 
+// Strips the ordinal flags from IAT entries, and swaps them to big endian
+int xenonifyIAT(FILE *basefile, struct peData *peData)
+{
+    // Loop through each import table and handle their IAT entries
+    for(uint32_t i = 0; i < peData->peImportInfo.tableCount; i++)
+    {
+        // Seek to the first IAT entry for this table
+        if(fseek(basefile, peData->peImportInfo.tables[i].rva, SEEK_SET) != 0)
+        { return ERR_FILE_READ; }
+
+        // Loop through each import and handle it's IAT entry
+        for(uint32_t j = 0; j < peData->peImportInfo.tables[i].importCount; j++)
+        {
+            uint32_t iatEntry = get32BitFromPE(basefile);
+
+            if(errno != SUCCESS)
+            { return ERR_FILE_READ; }
+
+            // Seek back so we can write back to the same place
+            if(fseek(basefile, -0x4, SEEK_CUR) != 0)
+            { return ERR_FILE_READ; }
+
+            // Xenonify the IAT entry
+            iatEntry &= ~PE_IMPORT_ORDINAL_FLAG; // Strip the import by ordinal flag
+
+            // Write back out as big endian (TODO: make a utility function for this like get32BitFromPE)
+#ifdef LITTLE_ENDIAN_SYSTEM
+            iatEntry = __builtin_bswap32(iatEntry);
+#endif
+
+            if(fwrite(&iatEntry, sizeof(uint32_t), 1, basefile) < 1)
+            { return ERR_FILE_WRITE; }
+        }
+    }
+
+    return SUCCESS;
+}
+
 // Maps the PE file into the basefile (RVAs become offsets)
 int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
 {
-    struct sectionInfo *sectionInfo = malloc(peData->numberOfSections * sizeof(struct sectionInfo));
+    // Retrieve the section info from PE (TODO: use the data we get from getHdrData for this, right now we're duplicating work)
+    struct sectionInfo *sectionInfo = malloc(peData->numberOfSections *sizeof(struct sectionInfo));
 
     if(!sectionInfo)
     { return ERR_OUT_OF_MEM; }
 
+    // Seek to the first section in the section table at virtualSize
     if(fseek(pe, (peData->headerSize - 1) + 0x8, SEEK_SET) != 0)
     { return ERR_FILE_READ; }
 
@@ -59,6 +99,7 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
         if(errno != SUCCESS)
         { return errno; }
 
+        // Seek to the next entry at virtualSize
         if(fseek(pe, 0x18, SEEK_CUR) != 0)
         { return ERR_FILE_READ; }
     }
@@ -66,6 +107,7 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
     if(fseek(pe, 0, SEEK_SET) != 0)
     { return ERR_FILE_READ; }
 
+    // Copy the PE header and section table to the basefile verbatim
     uint8_t *buffer = malloc(peData->headerSize + peData->sectionTableSize);
 
     if(!buffer)
@@ -79,6 +121,7 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
     if(fwrite(buffer, 1, totalHeader, basefile) != totalHeader)
     { return ERR_FILE_READ; }
 
+    // Now map the sections and write them
     for(uint16_t i = 0; i < peData->numberOfSections; i++)
     {
         buffer = realloc(buffer, sectionInfo[i].rawSize);
@@ -99,6 +142,8 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
         { return ERR_FILE_READ; }
     }
 
+    // Pad the rest of the final page with zeroes, we can achieve this by seeking
+    // to the end and placing a single zero there (unless the data runs all the way up to the end!)
     uint32_t currentOffset = ftell(basefile);
     uint32_t nextAligned = getNextAligned(currentOffset, peData->pageSize) - 1;
 
@@ -118,10 +163,15 @@ int mapPEToBasefile(FILE *pe, FILE *basefile, struct peData *peData)
         { return ERR_FILE_READ; }
     }
 
+    // Make sure to update the PE (basefile) size
     peData->size = ftell(basefile);
 
+    // We're done with these now, free them
     nullAndFree((void **)&buffer);
     nullAndFree((void **)&sectionInfo);
 
-    return SUCCESS;
+    // While we're writing the basefile, let's do the required modifications to the IAT.
+    // We can skip the return check because this is the last function call.
+    // The outcome of this is the outcome of the whole function.
+    return xenonifyIAT(basefile, peData);
 }

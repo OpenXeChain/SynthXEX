@@ -86,6 +86,7 @@ int checkForBranchStub(FILE *pe, struct peData *peData)
             {
                 if(instructionBuffer[3] == expectedInstructions[3])
                 {
+                    // Found a branch stub, check if the address matches any IAT entries
                     uint32_t currentLoadAddr = ((instructionBuffer[0] & 0x0000FFFF) << 16) |
                                                (instructionBuffer[1] & 0x0000FFFF);
 
@@ -93,15 +94,16 @@ int checkForBranchStub(FILE *pe, struct peData *peData)
                     {
                         if(peData->peImportInfo.tables[i].importCount ==
                                 peData->peImportInfo.tables[i].branchStubCount)
-                        { continue; }
+                        { continue; } // We already have all the branch stubs possible for this table, skip it
 
                         for(uint32_t j = 0; j < peData->peImportInfo.tables[i].importCount; j++)
                         {
                             if(peData->peImportInfo.tables[i].imports[j].branchStubAddr != 0)
-                            { continue; }
+                            { continue; } // We already have this branch stub, skip it
 
                             if(peData->peImportInfo.tables[i].imports[j].iatAddr == currentLoadAddr)
                             {
+                                // Found the branch stub for the current import, store the address
                                 uint32_t currentBranchStubRVA = offsetToRVA(ftell(pe) - 16, &(peData->sections));
 
                                 if(currentBranchStubRVA == 0)
@@ -152,7 +154,7 @@ int getImports(FILE *pe, struct peData *peData)
     if(currentIDT == NULL)
     { return ERR_OUT_OF_MEM; }
 
-    uint32_t *blankIDT = calloc(5, sizeof(uint32_t));  // Blank IDT for comparisons
+    uint32_t *blankIDT = calloc(5, sizeof(uint32_t)); // Blank IDT for comparisons
 
     if(blankIDT == NULL)
     {
@@ -181,7 +183,7 @@ int getImports(FILE *pe, struct peData *peData)
             return ERR_OUT_OF_MEM;
         }
 
-        memset(&(peData->peImportInfo.tables[i]), 0, sizeof(struct peImportTable));  // Make sure it's blank
+        memset(&(peData->peImportInfo.tables[i]), 0, sizeof(struct peImportTable)); // Make sure it's blank
 
 #ifdef BIG_ENDIAN_SYSTEM
 
@@ -235,6 +237,9 @@ int getImports(FILE *pe, struct peData *peData)
         }
 
     doneGettingTableName:
+        // Store the IAT RVA for this table
+        peData->peImportInfo.tables[i].rva = currentIDT[4];
+
         // Seek to the IAT and read the first entry
         uint32_t iatOffset = rvaToOffset(currentIDT[4], &(peData->sections));
 
@@ -271,7 +276,7 @@ int getImports(FILE *pe, struct peData *peData)
             // Allocate space for the current import
             peData->peImportInfo.tables[i].importCount++;
             peData->peImportInfo.tables[i].imports = realloc(peData->peImportInfo.tables[i].imports, (j + 1) * sizeof(struct peImport));
-            peData->peImportInfo.tables[i].imports[j].branchStubAddr = 0;  // Zero it for later
+            peData->peImportInfo.tables[i].imports[j].branchStubAddr = 0; // Zero it for later
 
             // Store the address of the current import entry in iatAddr
             uint32_t currentImportRVA = offsetToRVA(ftell(pe) - 4, &(peData->sections));
@@ -317,19 +322,19 @@ int getImports(FILE *pe, struct peData *peData)
     {
         if(peData->peImportInfo.totalBranchStubCount == peData->peImportInfo.totalImportCount)
         {
-            break;    // All branch stubs found
+            break; // All branch stubs found
         }
 
         if(!(peData->sections.section[i].permFlag & XEX_SECTION_CODE))
         {
-            continue;    // Skip non-executable section
+            continue; // Skip non-executable section
         }
 
         // Seek to the start of the current section
         if(fseek(pe, peData->sections.section[i].offset, SEEK_SET) != 0)
         { return ERR_FILE_READ; }
 
-        // While inside section and at least 4 instructions left (15 bytes)
+        // While inside section and at least 4 instructions left (> 15 bytes)
         while(ftell(pe) < (peData->sections.section[i].offset + peData->sections.section[i].rawSize) - 15)
         {
             int ret = checkForBranchStub(pe, peData);

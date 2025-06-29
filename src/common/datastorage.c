@@ -162,7 +162,7 @@ void freeAllMainStructs(struct offsets **offsets, struct xexHeader **xexHeader, 
 
 uint32_t getNextAligned(uint32_t offset, uint32_t alignment)
 {
-    if(offset % alignment)  // If offset not aligned
+    if(offset % alignment) // If offset not aligned
     {
         return offset + (alignment - (offset % alignment)); // Align
     }
