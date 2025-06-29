@@ -93,7 +93,7 @@ struct section
 
 struct peImport
 {
-    uint32_t iatAddr; // Also contains a flag denoting whether this is a function or variable
+    uint32_t iatAddr;
     uint32_t branchStubAddr;
 };
 
