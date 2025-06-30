@@ -27,6 +27,7 @@ struct sectionInfo
 };
 
 // Strips the ordinal flags from IAT entries, and swaps them to big endian
+// Also adds module indexes to them
 int xenonifyIAT(FILE *basefile, struct peData *peData)
 {
     // Loop through each import table and handle their IAT entries
@@ -50,6 +51,7 @@ int xenonifyIAT(FILE *basefile, struct peData *peData)
 
             // Xenonify the IAT entry
             iatEntry &= ~PE_IMPORT_ORDINAL_FLAG; // Strip the import by ordinal flag
+            iatEntry |= (i & 0x000000FF) << 16; // Add the module index
 
             // Write back out as big endian (TODO: make a utility function for this like get32BitFromPE)
 #ifdef LITTLE_ENDIAN_SYSTEM
