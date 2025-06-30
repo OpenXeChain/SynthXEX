@@ -10,20 +10,17 @@ SynthXEX is the XEX(2) builder (and thus the last step in building an executable
 
 This was developed by referencing public knowledge on the XEX(2) file format, along with staring at XEX files in a hex editor to decypher aspects which do not seem to be documented anywhere. No Microsoft code was decompiled to develop SynthXEX, and I ask that any contributors do not do so either.
 
-This is in early development and MANY features are missing (most notable imports/exports). No guarantees are made as to the functionality of the program, or it's stability. Functionality may change at any time.
+This is in early development and MANY features are missing (most notable exports). No guarantees are made as to the functionality of the program, or it's stability. Functionality may change at any time.
 
 This *should* support any POSIX-compliant operating system, along with Windows.
 
-## Installing
 
-SynthXEX is part of the FreeChainXenon toolchain. It's installer is located [here](https://git.aidenisik.scot/FreeChainXenon/FCX-Installer).
-
-## Building
+## Building (POSIX, standard method)
 
 ### Prerequisites
 
 - A C compiler (GCC/Clang)
-- CMake (>= 3.25.1)
+- CMake (>= 3.24.2)
 - Make
 - Git
 
@@ -31,7 +28,7 @@ To install these on Debian: ```sudo apt install gcc cmake make git```
 
 ### Downloading
 
-Run: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
 
 ### Compiling
 
@@ -45,15 +42,102 @@ Build: ```make```
 
 Install: ```sudo make install```
 
+
+## Building (Guix)
+
+### Prerequisites
+
+- Guix
+- Git
+
+### Compiling
+
+Choose ONE of the options below.
+
+#### Compiling & Installing
+
+Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+
+Switch to the newly cloned directory: ```cd SynthXEX```
+
+Install: ```guix time-machine -C channels.scm -- package -f synthxex.scm```
+
+#### Compiling Only
+
+Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+
+Switch to the newly cloned directory: ```cd SynthXEX```
+
+Build: ```guix time-machine -C channels.scm -- build -f synthxex.scm```
+
+#### Compiling & Installing to Config
+
+TODO
+
+
+## Building (Nix)
+
+### Prerequisites
+
+- Nix
+- Git
+
+### Compiling
+
+Choose ONE of the options below.
+
+#### Compiling & Installing
+
+Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+
+Switch to the newly cloned directory: ```cd SynthXEX```
+
+Run: ```nix profile install .#synthxex```
+
+#### Compiling Only
+
+Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+
+Switch to the newly cloned directory: ```cd SynthXEX```
+
+Run: ```nix build .#synthxex```
+
+#### Compiling & Installing to Config
+
+Add SynthXEX to your configuration.nix file:
+
+```
+{ config, modulesPath, lib, pkgs, ... }:
+
+let
+  synthxex = builtins.getFlake "git+https://git.aidenisik.scot/FreeChainXenon/SynthXEX";
+  synthxexPkgs = synthxex.packages.${pkgs.hostPlatform.system};
+in {
+  # ...
+  environment.systemPackages = with pkgs; [
+    # ...
+    synthxexPkgs.synthxex
+  ];
+}
+```
+
+
 ## Special thanks to:
 - [InvoxiPlayGames](https://github.com/InvoxiPlayGames), for help understanding the XEX format
 - [emoose](https://github.com/emoose), for xex1tool, which was very useful for taking apart XEX files and getting info from them
 - [Free60Project](https://github.com/Free60Project), for documentation on the XEX format, which was useful in the early days
-- Several other members of the Xbox360Hub Discord server, for a multitude of reasons
+- [Vali0004](https://github.com/Vali0004), for helping clean up and harden code, along with Nix packaging
+- Several members of the Xbox360Hub Discord server, for a multitude of reasons
+
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 
 ## Licensing
 
-### SynthXEX (src/*, CMakeLists.txt)
+### SynthXEX
 
 Copyright (c) 2024-25 Aiden Isik
 
@@ -70,7 +154,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-### getopt_port (include/getopt_port/*)
+### getopt_port
 
 Copyright (c) 2012-2023, Kim Grasman <kim.grasman@gmail.com>
 
@@ -98,7 +182,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-### GNU Nettle (include/nettle/*)
+### GNU Nettle
 
 Copyright (C) 2001, 2013 Niels Möller
 

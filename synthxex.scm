@@ -31,7 +31,7 @@
 
 
 ;;; Hardcoded fallback version in case we can't rely on git
-(define synthxex-fallback-version "v0.0.3")
+(define synthxex-fallback-version "v0.0.4")
 
 
 ;;; Determine the version of SynthXEX we are building
