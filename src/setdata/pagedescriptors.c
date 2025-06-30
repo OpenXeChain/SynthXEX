@@ -39,12 +39,15 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
     if(!secInfoHeader->descriptors)
     { return ERR_OUT_OF_MEM; }
 
-    struct pageDescriptor *descriptors = secInfoHeader->descriptors;
+    struct pageDescriptor *descriptors = secInfoHeader->descriptors; // So we don't dereference an unaligned pointer
 
+    // Setting size/info data and calculating hashes for page descriptors
     for(int64_t i = secInfoHeader->pageDescCount - 1; i >= 0; i--)
     {
+        // Get page type (rwx)
         descriptors[i].sizeAndInfo = getRwx(secInfoHeader, peData, i);
 
+        // Init sha1 hash
         struct sha1_ctx shaContext;
         sha1_init(&shaContext);
 
@@ -62,6 +65,7 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
             return ERR_FILE_READ;
         }
 
+        // For little endian systems, swap into big endian for hashing, then back (to keep struct endianness consistent)
 #ifdef LITTLE_ENDIAN_SYSTEM
         descriptors[i].sizeAndInfo = __builtin_bswap32(descriptors[i].sizeAndInfo);
 #endif
