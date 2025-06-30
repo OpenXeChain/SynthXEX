@@ -166,10 +166,8 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
         else
         { goto cleanup_names_invalid; }
 
-        // Determine the number of addresses (2 for functions, 1 for everything else)
-        importTables[i].addressCount =
-            (peImportInfo->tables[i].branchStubCount * 2) +
-            (peImportInfo->tables[i].importCount - peImportInfo->tables[i].branchStubCount);
+        // Determine the number of addresses
+        importTables[i].addressCount = peImportInfo->tables[i].importCount;
 
         // Allocate enough memory for the addresses
         importTables[i].addresses = calloc(importTables[i].addressCount, sizeof(uint32_t));
@@ -187,14 +185,6 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
             { goto cleanup_names_invalid; }
 
             addresses[currentAddr++] = peImportInfo->tables[i].imports[j].iatAddr;
-
-            if(peImportInfo->tables[i].imports[j].branchStubAddr != 0)
-            {
-                if(currentAddr >= importTables[i].addressCount)
-                { goto cleanup_names_invalid; }
-
-                addresses[currentAddr++] = peImportInfo->tables[i].imports[j].branchStubAddr;
-            }
         }
 
         // Determine the total size, in bytes, of the current table (- sizeof(void*) to exclude address to addresses at the end)

@@ -94,7 +94,6 @@ struct section
 struct peImport
 {
     uint32_t iatAddr;
-    uint32_t branchStubAddr;
 };
 
 struct peImportTable
@@ -102,7 +101,6 @@ struct peImportTable
     char *name;
     uint32_t rva;
     uint32_t importCount;
-    uint32_t branchStubCount;
     struct peImport *imports;
 };
 
@@ -111,7 +109,6 @@ struct peImportInfo
     uint32_t idtRVA;
     uint32_t tableCount;
     uint32_t totalImportCount;
-    uint32_t totalBranchStubCount;
     struct peImportTable *tables;
 };
 
