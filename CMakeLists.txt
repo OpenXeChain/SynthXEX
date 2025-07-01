@@ -72,7 +72,7 @@ execute_process(
 if(${VERSION_STRING} MATCHES "^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+-g[0-9a-f]+(-dirty)?)?$")
   add_compile_definitions(SYNTHXEX_VERSION="${VERSION_STRING}")
 else()
-  add_compile_definitions(SYNTHXEX_VERSION="v0.0.4") # Only used as a fallback
+  add_compile_definitions(SYNTHXEX_VERSION="v0.0.5") # Only used as a fallback
 endif()
 
 # Setting install target settings...

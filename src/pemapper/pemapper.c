@@ -40,6 +40,7 @@ int xenonifyIAT(FILE *basefile, struct peData *peData)
         // Loop through each import and handle it's IAT entry
         for(uint32_t j = 0; j < peData->peImportInfo.tables[i].importCount; j++)
         {
+            // Read in the current IAT entry
             uint32_t iatEntry = get32BitFromPE(basefile);
 
             if(errno != SUCCESS)
@@ -60,6 +61,10 @@ int xenonifyIAT(FILE *basefile, struct peData *peData)
 
             if(fwrite(&iatEntry, sizeof(uint32_t), 1, basefile) < 1)
             { return ERR_FILE_WRITE; }
+
+            // Call file positioning function between reads and writes to the same file.
+            // This is mandated by the C standard.
+            fseek(basefile, 0, SEEK_CUR);
         }
     }
 
