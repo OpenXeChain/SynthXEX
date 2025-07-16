@@ -164,13 +164,13 @@ int main(int argc, char **argv)
 {
     static struct option longOptions[] =
     {
-        { "help", no_argument, 0, 0 },
-        { "version", no_argument, 0, 0 },
-        { "libs", no_argument, 0, 0 },
-        { "skip-machine-check", no_argument, 0, 0 },
-        { "input", required_argument, 0, 0 },
-        { "output", required_argument, 0, 0 },
-        { "type", required_argument, 0, 0 },
+        { "help", no_argument, 0, 'h' },
+        { "version", no_argument, 0, 'v' },
+        { "libs", no_argument, 0, 'l' },
+        { "skip-machine-check", no_argument, 0, 's' },
+        { "input", required_argument, 0, 'i' },
+        { "output", required_argument, 0, 'o' },
+        { "type", required_argument, 0, 't' },
         { 0, 0, 0, 0 }
     };
 
@@ -202,85 +202,86 @@ int main(int argc, char **argv)
 
     while((option = getopt_long(argc, argv, "hvlsi:o:t:", longOptions, &optIndex)) != -1)
     {
-        if(option == 'h' || option == '?' || (option == 0 && strcmp(longOptions[optIndex].name, "help") == 0))
+        switch(option)
         {
-            dispHelp(argv);
-            freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
-                               &optHeaderEntries, &optHeaders);
-            return SUCCESS;
-        }
-        else if(option == 'v' || (option == 0 && strcmp(longOptions[optIndex].name, "version") == 0))
-        {
-            dispVer();
-            freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
-                               &optHeaderEntries, &optHeaders);
-            return SUCCESS;
-        }
-        else if(option == 'l' || (option == 0 && strcmp(longOptions[optIndex].name, "libs") == 0))
-        {
-            dispLibs();
-            freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
-                               &optHeaderEntries, &optHeaders);
-            return SUCCESS;
-        }
-        else if(option == 's' || (option == 0 && strcmp(longOptions[optIndex].name, "skip-machine-check") == 0))
-        {
-            printf("%s WARNING: Skipping machine ID check.\n", SYNTHXEX_PRINT_STEM);
-            skipMachineCheck = true;
-        }
-        else if(option == 'i' || (option == 0 && strcmp(longOptions[optIndex].name, "input") == 0))
-        {
-            gotInput = true;
-            pePath = malloc(strlen(optarg) + 1);
-
-            if(pePath == NULL)
-            {
-                printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
-                nullAndFree((void **)&xexfilePath);
+            case 'v':
+                dispVer();
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
-                return -1;
-            }
+                return SUCCESS;
 
-            strcpy(pePath, optarg);
-        }
-        else if(option == 'o' || (option == 0 && strcmp(longOptions[optIndex].name, "output") == 0))
-        {
-            gotOutput = true;
-            xexfilePath = malloc(strlen(optarg) + 1);
-
-            if(xexfilePath == NULL)
-            {
-                printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
-                nullAndFree((void **)&pePath);
+            case 'l':
+                dispLibs();
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
-                return -1;
-            }
+                return SUCCESS;
 
-            strcpy(xexfilePath, optarg);
-        }
-        else if(option == 't' || (option == 0 && strcmp(longOptions[optIndex].name, "type") == 0))
-        {
-            if(strcmp(optarg, "title") == 0)
-            { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE; }
-            else if(strcmp(optarg, "titledll") == 0)
-            { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE | XEX_MOD_FLAG_DLL; }
-            else if(strcmp(optarg, "sysdll") == 0)
-            { xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL; }
-            else if(strcmp(optarg, "dll") == 0)
-            { xexHeader->moduleFlags = XEX_MOD_FLAG_DLL; }
-            else
-            {
-                printf("%s ERROR: Invalid type override \"%s\" (valid: title, titledll, sysdll, dll). Aborting.\n",
-                       SYNTHXEX_PRINT_STEM, optarg);
+            case 's':
+                printf("%s WARNING: Skipping machine ID check.\n", SYNTHXEX_PRINT_STEM);
+                skipMachineCheck = true;
+                break;
 
-                nullAndFree((void **)&pePath);
-                nullAndFree((void **)&xexfilePath);
+            case 'i':
+                gotInput = true;
+                pePath = malloc(strlen(optarg) + 1);
+
+                if(pePath == NULL)
+                {
+                    printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
+                    nullAndFree((void **)&xexfilePath);
+                    freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
+                                       &optHeaderEntries, &optHeaders);
+                    return -1;
+                }
+
+                strcpy(pePath, optarg);
+                break;
+
+            case 'o':
+                gotOutput = true;
+                xexfilePath = malloc(strlen(optarg) + 1);
+
+                if(xexfilePath == NULL)
+                {
+                    printf("%s ERROR: Out of memory. Aborting.\n", SYNTHXEX_PRINT_STEM);
+                    nullAndFree((void **)&pePath);
+                    freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
+                                       &optHeaderEntries, &optHeaders);
+                    return -1;
+                }
+
+                strcpy(xexfilePath, optarg);
+                break;
+
+            case 't':
+                if(strcmp(optarg, "title") == 0)
+                { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE; }
+                else if(strcmp(optarg, "titledll") == 0)
+                { xexHeader->moduleFlags = XEX_MOD_FLAG_TITLE | XEX_MOD_FLAG_DLL; }
+                else if(strcmp(optarg, "sysdll") == 0)
+                { xexHeader->moduleFlags = XEX_MOD_FLAG_EXPORTS | XEX_MOD_FLAG_DLL; }
+                else if(strcmp(optarg, "dll") == 0)
+                { xexHeader->moduleFlags = XEX_MOD_FLAG_DLL; }
+                else
+                {
+                    printf("%s ERROR: Invalid type override \"%s\" (valid: title, titledll, sysdll, dll). Aborting.\n",
+                           SYNTHXEX_PRINT_STEM, optarg);
+
+                    nullAndFree((void **)&pePath);
+                    nullAndFree((void **)&xexfilePath);
+                    freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
+                                       &optHeaderEntries, &optHeaders);
+                    return -1;
+                }
+
+                break;
+
+            case 'h':
+            default:
+                dispHelp(argv);
                 freeAllMainStructs(&offsets, &xexHeader, &secInfoHeader, &peData,
                                    &optHeaderEntries, &optHeaders);
-                return -1;
-            }
+                return SUCCESS;
         }
     }
 
