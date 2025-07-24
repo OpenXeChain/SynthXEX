@@ -269,13 +269,17 @@ cleanup_offsets:
 cleanup_names:
 
     for(uint32_t i = 0; i < importLibraries->tableCount; i++)
-    { nullAndFree((void **) & (importTables[i].addresses)); }
+    {
+        uint32_t *addresses = importTables[i].addresses; // Use to avoid deferencing an unaligned pointer
+        nullAndFree((void **)&addresses);
+        importTables[i].addresses = addresses;
+    }
 
 cleanup_names_invalid:
     nullAndFree((void **)&names);
 cleanup_tables:
-    nullAndFree((void **) & (importLibraries->importTables));
-    importLibraries->importTables = NULL;
+    nullAndFree((void **)&importTables);
+    importLibraries->importTables = importTables;
     return ret;
 }
 
