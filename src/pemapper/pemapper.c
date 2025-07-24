@@ -46,12 +46,33 @@ int xenonifyIAT(FILE *basefile, struct peData *peData)
             if(errno != SUCCESS)
             { return ERR_FILE_READ; }
 
-            // Seek back so we can write back to the same place
-            if(fseek(basefile, -0x4, SEEK_CUR) != 0)
-            { return ERR_FILE_READ; }
+            // If we're importing by name, get the ordinal from the hint and overwrite the name RVA
+            if(!(iatEntry & PE_IMPORT_ORDINAL_FLAG))
+            {
+                // Seek to the RVA of the import name
+                uint32_t pos = ftell(basefile) - 0x4;
 
-            // Xenonify the IAT entry
-            iatEntry &= ~PE_IMPORT_ORDINAL_FLAG; // Strip the import by ordinal flag
+                if(fseek(basefile, iatEntry, SEEK_SET) != 0)
+                { return ERR_FILE_READ; }
+
+                // Grab the ordinal from the start of the name
+                iatEntry = get16BitFromPE(basefile);
+
+                if(errno != SUCCESS)
+                { return ERR_FILE_READ; }
+
+                // Seek back to the entry to write
+                fseek(basefile, pos, SEEK_SET);
+            }
+            else
+            {
+                // Seek back so we can write back to the same place
+                if(fseek(basefile, -0x4, SEEK_CUR) != 0)
+                { return ERR_FILE_READ; }
+
+                iatEntry &= ~PE_IMPORT_ORDINAL_FLAG; // Strip the import by ordinal flag
+            }
+
             iatEntry |= (i & 0x000000FF) << 16; // Add the module index
 
             // Write back out as big endian (TODO: make a utility function for this like get32BitFromPE)
