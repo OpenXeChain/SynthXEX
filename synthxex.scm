@@ -98,7 +98,7 @@
     (list git)) ; Needed for version number generation by cmake
    (synopsis "XEX2 generator for the Xbox 360 games console")
    (description "SynthXEX is an XEX2 generator, the final component of development toolchains for the Xbox 360 games console.")
-   (home-page "https://git.aidenisik.scot/FreeChainXenon/SynthXEX")
+   (home-page "https://github.com/OpenXeChain/SynthXEX")
    (license agpl3+)))
 
 synthxex

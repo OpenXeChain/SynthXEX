@@ -6,7 +6,7 @@ Licensed under the GNU AGPLv3 or later, using libraries with various licenses. S
 
 ## Description
 
-SynthXEX is the XEX(2) builder (and thus the last step in building an executable) for the [FreeChainXenon](https://git.aidenisik.scot/FreeChainXenon) project. FreeChainXenon is a free/libre/open-source development toolchain for the Xbox 360, designed to do the same job as the official Xbox 360 SDK (building applications which run on the Xbox 360 OS), without the legal and outdated tech issues which come with that.
+SynthXEX is the XEX(2) builder (and thus the last step in building an executable) for the [OpenXeChain](https://github.com/OpenXeChain) project. OpenXeChain is a free/libre/open-source development toolchain for the Xbox 360, designed to do the same job as the official Xbox 360 SDK (building applications which run on the Xbox 360 OS), without the legal and outdated tech issues which come with that.
 
 This was developed by referencing public knowledge on the XEX(2) file format, along with staring at XEX files in a hex editor to decypher aspects which do not seem to be documented anywhere. No Microsoft code was decompiled to develop SynthXEX, and I ask that any contributors do not do so either.
 
@@ -28,7 +28,7 @@ To install these on Debian: ```sudo apt install gcc cmake make git```
 
 ### Downloading
 
-Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://github.com/OpenXeChain/SynthXEX```
 
 ### Compiling
 
@@ -56,7 +56,7 @@ Choose ONE of the options below.
 
 #### Compiling & Installing
 
-Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://github.com/OpenXeChain/SynthXEX```
 
 Switch to the newly cloned directory: ```cd SynthXEX```
 
@@ -64,7 +64,7 @@ Install: ```guix time-machine -C channels.scm -- package -f synthxex.scm```
 
 #### Compiling Only
 
-Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://github.com/OpenXeChain/SynthXEX```
 
 Switch to the newly cloned directory: ```cd SynthXEX```
 
@@ -88,7 +88,7 @@ Choose ONE of the options below.
 
 #### Compiling & Installing
 
-Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://github.com/OpenXeChain/SynthXEX```
 
 Switch to the newly cloned directory: ```cd SynthXEX```
 
@@ -96,7 +96,7 @@ Run: ```nix profile install .#synthxex```
 
 #### Compiling Only
 
-Clone: ```git clone https://git.aidenisik.scot/FreeChainXenon/SynthXEX```
+Clone: ```git clone https://github.com/OpenXeChain/SynthXEX```
 
 Switch to the newly cloned directory: ```cd SynthXEX```
 
@@ -110,7 +110,7 @@ Add SynthXEX to your configuration.nix file:
 { config, modulesPath, lib, pkgs, ... }:
 
 let
-  synthxex = builtins.getFlake "git+https://git.aidenisik.scot/FreeChainXenon/SynthXEX";
+  synthxex = builtins.getFlake "git+https://github.com/OpenXeChain/SynthXEX";
   synthxexPkgs = synthxex.packages.${pkgs.hostPlatform.system};
 in {
   # ...

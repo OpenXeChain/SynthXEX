@@ -1,5 +1,5 @@
 // This file is part of SynthXEX, one component of the
-// FreeChainXenon development toolchain
+// OpenXeChain development toolchain
 //
 // Copyright (c) 2024-25 Aiden Isik
 //
@@ -90,7 +90,7 @@ void dispLibs()
 
 void dispVer()
 {
-    printf("\n%s\n\nThe XEX builder of the FreeChainXenon project\n\n", SYNTHXEX_VERSION_STRING);
+    printf("\n%s\n\nThe XEX builder of the OpenXeChain project\n\n", SYNTHXEX_VERSION_STRING);
     printf("Copyright (c) %s Aiden Isik\n\nThis program is free software: you can redistribute it and/or modify\n", SYNTHXEX_COPYRIGHT);
     printf("it under the terms of the GNU Affero General Public License as published by\n");
     printf("the Free Software Foundation, either version 3 of the License, or\n");

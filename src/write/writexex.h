@@ -1,5 +1,5 @@
 // This file is part of SynthXEX, one component of the
-// FreeChainXenon development toolchain
+// OpenXeChain development toolchain
 //
 // Copyright (c) 2024 Aiden Isik
 //
