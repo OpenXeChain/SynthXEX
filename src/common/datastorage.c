@@ -121,22 +121,16 @@ void freeOptHeaderEntriesStruct(struct optHeaderEntries **optHeaderEntries)
 
 void freeImportLibrariesStruct(struct importLibraries *importLibraries)
 {
-    struct importTable *importTables = importLibraries->importTables;
-    char *nameTable = importLibraries->nameTable; // Use these to avoid dereferencing unaligned pointers
+    nullAndFree((void **) & (importLibraries->dynamicFields.nameTable));
 
-    nullAndFree((void **)&nameTable);
-
-    if(importTables != NULL)
+    if(importLibraries->dynamicFields.importTables != NULL)
     {
-        for(uint32_t i = 0; i < importLibraries->tableCount; i++)
+        for(uint32_t i = 0; i < importLibraries->staticFields.tableCount; i++)
         {
-            uint32_t *addresses = importTables[i].addresses; // Avoid dereferencing unaligned pointer
-            nullAndFree((void **)&addresses);
-            importTables[i].addresses = addresses;
+            nullAndFree((void **) & (importLibraries->dynamicFields.importTables[i].dynamicFields.addresses));
         }
 
-        nullAndFree((void **)&importTables);
-        importLibraries->importTables = importTables;
+        nullAndFree((void **) & (importLibraries->dynamicFields.importTables));
     }
 }
 

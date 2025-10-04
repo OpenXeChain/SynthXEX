@@ -91,7 +91,7 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
     if(ret != SUCCESS)
     { return ret; }
 
-    currentOffset += optHeaders->importLibraries.size; // Reserving bytes for imports
+    currentOffset += optHeaders->importLibraries.staticFields.size; // Reserving bytes for imports
 
     // PE basefile
     currentOffset = getNextAligned(currentOffset, 0x1000); // 4KiB alignment for basefile
@@ -99,9 +99,9 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
     xexHeader->peOffset = currentOffset;
 
     // Imports, the end of this header is aligned to the start of the basefile, so they are a special case
-    if(optHeaders->importLibraries.tableCount > 0)
+    if(optHeaders->importLibraries.staticFields.tableCount > 0)
     {
-        offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.size;
+        offsets->optHeaders[importLibIdcs.header] = offsets->basefile - optHeaders->importLibraries.staticFields.size;
         optHeaderEntries->optHeaderEntry[importLibIdcs.entry].dataOrOffset = offsets->optHeaders[importLibIdcs.header];
     }
 

@@ -133,56 +133,55 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
         currentHeader++;
     }
 
-    if(optHeaders->importLibraries.size != 0)
+    if(optHeaders->importLibraries.staticFields.size != 0)
     {
         fseek(xex, offsets->optHeaders[currentHeader], SEEK_SET);
 
         // Write the main header first
-
-        // Use these to avoid dereferencing an unaligned pointer
-        char *nameTable = optHeaders->importLibraries.nameTable;
-
         // Save the values we need to use before byteswapping
-        uint32_t nameTableSize = optHeaders->importLibraries.nameTableSize;
-        uint32_t tableCount = optHeaders->importLibraries.tableCount;
+        uint32_t nameTableSize = optHeaders->importLibraries.staticFields.nameTableSize;
+        uint32_t tableCount = optHeaders->importLibraries.staticFields.tableCount;
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-        optHeaders->importLibraries.size = __builtin_bswap32(optHeaders->importLibraries.size);
-        optHeaders->importLibraries.nameTableSize = __builtin_bswap32(optHeaders->importLibraries.nameTableSize);
-        optHeaders->importLibraries.tableCount = __builtin_bswap32(optHeaders->importLibraries.tableCount);
+        optHeaders->importLibraries.staticFields.size = __builtin_bswap32(optHeaders->importLibraries.staticFields.size);
+        optHeaders->importLibraries.staticFields.nameTableSize = __builtin_bswap32(optHeaders->importLibraries.staticFields.nameTableSize);
+        optHeaders->importLibraries.staticFields.tableCount = __builtin_bswap32(optHeaders->importLibraries.staticFields.tableCount);
 #endif
 
-        fwrite(&(optHeaders->importLibraries), sizeof(uint8_t), sizeof(struct importLibraries) - (2 * sizeof(void *)), xex);
-        fwrite(nameTable, sizeof(uint8_t), nameTableSize, xex);
+        // Write the import libraries header
+        fwrite(&(optHeaders->importLibraries.staticFields), sizeof(uint8_t), sizeof(struct importLibrariesStatic), xex);
+        fwrite(optHeaders->importLibraries.dynamicFields.nameTable, sizeof(uint8_t), nameTableSize, xex);
 
 #ifdef LITTLE_ENDIAN_SYSTEM
         // Restore the table count (we require it to free the import libraries struct later)
-        optHeaders->importLibraries.tableCount = tableCount;
+        optHeaders->importLibraries.staticFields.tableCount = tableCount;
 #endif
 
         // Now write each import table
-        // Use this to avoid dereferencing an unaligned pointer
-        struct importTable *importTables = optHeaders->importLibraries.importTables;
+        struct importTable *importTables = optHeaders->importLibraries.dynamicFields.importTables;
 
         for(uint32_t i = 0; i < tableCount; i++)
         {
-            uint32_t *addresses = importTables[i].addresses; // Use this to avoid dereferencing an unaligned pointer
-            uint16_t addressCount = importTables[i].addressCount;
+            // Save the address count before endian-swapping
+            uint16_t addressCount = importTables[i].staticFields.addressCount;
 
 #ifdef LITTLE_ENDIAN_SYSTEM
-            importTables[i].size = __builtin_bswap32(importTables[i].size);
-            importTables[i].unknown = __builtin_bswap32(importTables[i].unknown);
-            importTables[i].targetVer = __builtin_bswap32(importTables[i].targetVer);
-            importTables[i].minimumVer = __builtin_bswap32(importTables[i].minimumVer);
-            importTables[i].addressCount = __builtin_bswap16(importTables[i].addressCount);
+            importTables[i].staticFields.size = __builtin_bswap32(importTables[i].staticFields.size);
+            importTables[i].staticFields.unknown = __builtin_bswap32(importTables[i].staticFields.unknown);
+            importTables[i].staticFields.targetVer = __builtin_bswap32(importTables[i].staticFields.targetVer);
+            importTables[i].staticFields.minimumVer = __builtin_bswap32(importTables[i].staticFields.minimumVer);
+            importTables[i].staticFields.addressCount = __builtin_bswap16(importTables[i].staticFields.addressCount);
 
             for(uint16_t j = 0; j < addressCount; j++)
-            { addresses[j] = __builtin_bswap32(addresses[j]); }
+            {
+                importTables[i].dynamicFields.addresses[j] = __builtin_bswap32(importTables[i].dynamicFields.addresses[j]);
+            }
 
 #endif
 
-            fwrite(&(importTables[i]), sizeof(uint8_t), sizeof(struct importTable) - sizeof(void *), xex);
-            fwrite(addresses, sizeof(uint32_t), addressCount, xex);
+            // Write out the import table
+            fwrite(&(importTables[i].staticFields), sizeof(uint8_t), sizeof(struct importTableStatic), xex);
+            fwrite(importTables[i].dynamicFields.addresses, sizeof(uint32_t), addressCount, xex);
         }
 
         currentHeader++;

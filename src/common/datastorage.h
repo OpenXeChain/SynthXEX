@@ -195,7 +195,20 @@ struct __attribute__((packed)) basefileFormat
     uint32_t zeroSize;
 };
 
-struct __attribute__((packed)) importTable
+// Import table
+// ------------------------
+// - size         (0x4)
+// - sha1         (0x14)
+// - ????         (0x4)
+// - targetVer    (0x4)
+// - minimumVer   (0x4)
+// - padding      (0x1)
+// - tableIndex   (0x1)
+// - addressCount (0x2)
+// - addresses    (dynamic)
+// ------------------------
+
+struct __attribute__((packed)) importTableStatic
 {
     uint32_t size;
     uint8_t sha1[0x14];
@@ -205,16 +218,45 @@ struct __attribute__((packed)) importTable
     uint8_t padding;
     uint8_t tableIndex;
     uint16_t addressCount;
+};
+
+struct importTableDynamic
+{
     uint32_t *addresses; // IAT entry address followed by branch stub code address for functions, just IAT address for other symbols
 };
 
-struct __attribute__((packed)) importLibraries
+struct importTable
+{
+    struct importTableStatic staticFields;
+    struct importTableDynamic dynamicFields;
+};
+
+// Import libraries
+// -------------------------
+// - size          (0x4)
+// - nameTableSize (0x4)
+// - tableCount    (0x4)
+// - nameTable     (dynamic)
+// - importTables  (dynamic)
+// -------------------------
+
+struct __attribute__((packed)) importLibrariesStatic
 {
     uint32_t size;
     uint32_t nameTableSize;
     uint32_t tableCount;
+};
+
+struct importLibrariesDynamic
+{
     char *nameTable;
     struct importTable *importTables;
+};
+
+struct importLibraries
+{
+    struct importLibrariesStatic staticFields;
+    struct importLibrariesDynamic dynamicFields;
 };
 
 struct __attribute__((packed)) tlsInfo
