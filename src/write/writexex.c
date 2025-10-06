@@ -51,12 +51,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     { fwrite(&(optHeaderEntries->optHeaderEntry[i]), sizeof(uint8_t), sizeof(struct optHeaderEntry), xex); }
 
     // Page descriptors
-    fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeader) - sizeof(void *), SEEK_SET);
+    fseek(xex, offsets->secInfoHeader + sizeof(struct secInfoHeaderStatic), SEEK_SET);
+    struct pageDescriptor *descriptors = secInfoHeader->dynamicFields.descriptors;
 
-    // So we don't try to dereference an unaligned pointer
-    struct pageDescriptor *descriptors = secInfoHeader->descriptors;
-
-    for(int i = 0; i < secInfoHeader->pageDescCount; i++)
+    for(int i = 0; i < secInfoHeader->staticFields.pageDescCount; i++)
     {
 #ifdef LITTLE_ENDIAN_SYSTEM
         descriptors[i].sizeAndInfo = __builtin_bswap32(descriptors[i].sizeAndInfo);
@@ -77,10 +75,10 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     if(buffer == NULL)
     { return ERR_OUT_OF_MEM; }
 
-    for(uint32_t i = 0; i < secInfoHeader->peSize; i += readBufSize)
+    for(uint32_t i = 0; i < secInfoHeader->staticFields.peSize; i += readBufSize)
     {
-        size_t bytesToRead = (secInfoHeader->peSize - i < readBufSize)
-                             ? secInfoHeader->peSize - i
+        size_t bytesToRead = (secInfoHeader->staticFields.peSize - i < readBufSize)
+                             ? secInfoHeader->staticFields.peSize - i
                              : readBufSize;
 
         size_t readRet = fread(buffer, sizeof(uint8_t), bytesToRead, pe);
@@ -99,20 +97,20 @@ int writeXEX(struct xexHeader *xexHeader, struct optHeaderEntries *optHeaderEntr
     // Security Info
 #ifdef LITTLE_ENDIAN_SYSTEM
     // Endian-swap secinfo header
-    secInfoHeader->headerSize = __builtin_bswap32(secInfoHeader->headerSize);
-    secInfoHeader->peSize = __builtin_bswap32(secInfoHeader->peSize);
-    secInfoHeader->imageInfoSize = __builtin_bswap32(secInfoHeader->imageInfoSize);
-    secInfoHeader->imageFlags = __builtin_bswap32(secInfoHeader->imageFlags);
-    secInfoHeader->baseAddr = __builtin_bswap32(secInfoHeader->baseAddr);
-    secInfoHeader->importTableCount = __builtin_bswap32(secInfoHeader->importTableCount);
-    secInfoHeader->exportTableAddr = __builtin_bswap32(secInfoHeader->exportTableAddr);
-    secInfoHeader->gameRegion = __builtin_bswap32(secInfoHeader->gameRegion);
-    secInfoHeader->mediaTypes = __builtin_bswap32(secInfoHeader->mediaTypes);
-    secInfoHeader->pageDescCount = __builtin_bswap32(secInfoHeader->pageDescCount);
+    secInfoHeader->staticFields.headerSize = __builtin_bswap32(secInfoHeader->staticFields.headerSize);
+    secInfoHeader->staticFields.peSize = __builtin_bswap32(secInfoHeader->staticFields.peSize);
+    secInfoHeader->staticFields.imageInfoSize = __builtin_bswap32(secInfoHeader->staticFields.imageInfoSize);
+    secInfoHeader->staticFields.imageFlags = __builtin_bswap32(secInfoHeader->staticFields.imageFlags);
+    secInfoHeader->staticFields.baseAddr = __builtin_bswap32(secInfoHeader->staticFields.baseAddr);
+    secInfoHeader->staticFields.importTableCount = __builtin_bswap32(secInfoHeader->staticFields.importTableCount);
+    secInfoHeader->staticFields.exportTableAddr = __builtin_bswap32(secInfoHeader->staticFields.exportTableAddr);
+    secInfoHeader->staticFields.gameRegion = __builtin_bswap32(secInfoHeader->staticFields.gameRegion);
+    secInfoHeader->staticFields.mediaTypes = __builtin_bswap32(secInfoHeader->staticFields.mediaTypes);
+    secInfoHeader->staticFields.pageDescCount = __builtin_bswap32(secInfoHeader->staticFields.pageDescCount);
 #endif
 
     fseek(xex, offsets->secInfoHeader, SEEK_SET);
-    fwrite(secInfoHeader, sizeof(uint8_t), sizeof(struct secInfoHeader) - sizeof(void *), xex); // sizeof(void*) == size of page descriptor pointer at end
+    fwrite(&(secInfoHeader->staticFields), sizeof(uint8_t), sizeof(struct secInfoHeaderStatic), xex);
 
     // Optional headers
     uint32_t currentHeader = 0;

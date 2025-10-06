@@ -20,7 +20,7 @@
 
 uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint32_t page)
 {
-    uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
+    uint32_t pageSize = secInfoHeader->staticFields.peSize / secInfoHeader->staticFields.pageDescCount;
     uint32_t currentOffset = page *pageSize;
 
     for(int32_t i = peData->sections.count - 1; i >= 0; i--)
@@ -32,17 +32,17 @@ uint8_t getRwx(struct secInfoHeader *secInfoHeader, struct peData *peData, uint3
 
 int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *secInfoHeader)
 {
-    uint32_t pageSize = secInfoHeader->peSize / secInfoHeader->pageDescCount;
+    uint32_t pageSize = secInfoHeader->staticFields.peSize / secInfoHeader->staticFields.pageDescCount;
 
-    secInfoHeader->descriptors = calloc(secInfoHeader->pageDescCount, sizeof(struct pageDescriptor));
+    secInfoHeader->dynamicFields.descriptors = calloc(secInfoHeader->staticFields.pageDescCount, sizeof(struct pageDescriptor));
 
-    if(!secInfoHeader->descriptors)
+    if(!secInfoHeader->dynamicFields.descriptors)
     { return ERR_OUT_OF_MEM; }
 
-    struct pageDescriptor *descriptors = secInfoHeader->descriptors; // So we don't dereference an unaligned pointer
+    struct pageDescriptor *descriptors = secInfoHeader->dynamicFields.descriptors;
 
     // Setting size/info data and calculating hashes for page descriptors
-    for(int64_t i = secInfoHeader->pageDescCount - 1; i >= 0; i--)
+    for(int64_t i = secInfoHeader->staticFields.pageDescCount - 1; i >= 0; i--)
     {
         // Get page type (rwx)
         descriptors[i].sizeAndInfo = getRwx(secInfoHeader, peData, i);
@@ -80,7 +80,7 @@ int setPageDescriptors(FILE *pe, struct peData *peData, struct secInfoHeader *se
         if(i != 0)
         { sha1_digest(&shaContext, 0x14, descriptors[i - 1].sha1); }
         else
-        { sha1_digest(&shaContext, 0x14, secInfoHeader->imageSha1); }
+        { sha1_digest(&shaContext, 0x14, secInfoHeader->staticFields.imageSha1); }
 
         nullAndFree((void **)&page);
     }

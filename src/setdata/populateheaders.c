@@ -50,22 +50,20 @@ int setXEXHeader(struct xexHeader *xexHeader, struct optHeaderEntries *optHeader
 int setSecInfoHeader(struct secInfoHeader *secInfoHeader, struct peData *peData)
 {
     // Writing data into security info header (much of this is derived from info in PE)
-    secInfoHeader->peSize = peData->size;
+    secInfoHeader->staticFields.peSize = peData->size;
 
     // Setting signature (just a SynthXEX version identifier)
-    strcpy(secInfoHeader->signature, SYNTHXEX_VERSION_STRING);
+    strncpy(secInfoHeader->staticFields.signature, SYNTHXEX_VERSION_STRING, 0xFF);
 
-    secInfoHeader->imageInfoSize = 0x174; // Image info size is always 0x174
-    secInfoHeader->imageFlags = (peData->pageSize == 0x1000 ? XEX_IMG_FLAG_4KIB_PAGES : 0) | XEX_IMG_FLAG_REGION_FREE; // If page size is 4KiB (small pages), set that flag
-    secInfoHeader->baseAddr = peData->baseAddr;
-    //memset(secInfoHeader->mediaID, 0, sizeof(secInfoHeader->mediaID)); // Null media ID (no longer need to use memset, as we use calloc for these structs now)
-    //memset(secInfoHeader->aesKey, 0, sizeof(secInfoHeader->aesKey)); // No encryption, null AES key
-    //secInfoHeader->exportTableAddr = TEMPEXPORTADDR;
-    secInfoHeader->exportTableAddr = 0;
-    secInfoHeader->gameRegion = XEX_REG_FLAG_REGION_FREE;
-    secInfoHeader->mediaTypes = 0xFFFFFFFF; // All flags set, can load from any type.
-    secInfoHeader->pageDescCount = secInfoHeader->peSize / peData->pageSize; // Number of page descriptors following security info (same number of pages)
-    secInfoHeader->headerSize = (secInfoHeader->pageDescCount *sizeof(struct pageDescriptor)) + (sizeof(struct secInfoHeader) - sizeof(void *)); // Page descriptor total size + length of rest of secinfo header (subtraction of sizeof void* is to remove pointer at end of struct from calculation)
+    secInfoHeader->staticFields.imageInfoSize = 0x174; // Image info size is always 0x174
+    secInfoHeader->staticFields.imageFlags = (peData->pageSize == 0x1000 ? XEX_IMG_FLAG_4KIB_PAGES : 0) // If page size is 4KiB (small pages), set that flag
+        | XEX_IMG_FLAG_REGION_FREE;
+    secInfoHeader->staticFields.baseAddr = peData->baseAddr;;
+    secInfoHeader->staticFields.exportTableAddr = 0;
+    secInfoHeader->staticFields.gameRegion = XEX_REG_FLAG_REGION_FREE;
+    secInfoHeader->staticFields.mediaTypes = 0xFFFFFFFF; // All flags set, can load from any type.
+    secInfoHeader->staticFields.pageDescCount = secInfoHeader->staticFields.peSize / peData->pageSize; // Number of page descriptors following security info (same number of pages)
+    secInfoHeader->staticFields.headerSize = (secInfoHeader->staticFields.pageDescCount *sizeof(struct pageDescriptor)) + sizeof(struct secInfoHeaderStatic); // Page descriptor total size + length of rest of secinfo header
 
     return SUCCESS;
 }

@@ -82,7 +82,7 @@ int placeStructs(struct offsets *offsets, struct xexHeader *xexHeader, struct op
     currentOffset = getNextAligned(currentOffset, 0x8); // 8-byte alignment for these headers, at least 8 bytes beyond end of optional header entries
     offsets->secInfoHeader = currentOffset;
     xexHeader->secInfoOffset = currentOffset;
-    currentOffset += (sizeof(struct secInfoHeader) - sizeof(void *)) + (secInfoHeader->pageDescCount *sizeof(struct pageDescriptor));
+    currentOffset += sizeof(struct secInfoHeaderStatic) + (secInfoHeader->staticFields.pageDescCount * sizeof(struct pageDescriptor));
 
     // Optional headers (minus imports)
     struct importLibIdcs importLibIdcs;

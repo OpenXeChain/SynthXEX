@@ -71,9 +71,7 @@ void freeSecInfoHeaderStruct(struct secInfoHeader **secInfoHeader)
     {
         if(*secInfoHeader != NULL)
         {
-            struct pageDescriptor *descriptors = (*secInfoHeader)->descriptors; // To avoid dereferencing an unaligned pointer
-            nullAndFree((void **)&descriptors);
-            //(*secInfoHeader)->descriptors = descriptors; // Not required in this case as secInfoHeader is freed anyways
+            nullAndFree((void **)&((*secInfoHeader)->dynamicFields.descriptors));
             nullAndFree((void **)secInfoHeader);
         }
     }

@@ -23,7 +23,7 @@ void setBasefileFormat(struct basefileFormat *basefileFormat, struct secInfoHead
     basefileFormat->size = (1 * 8) + 8; // (Block count * size of raw data descriptor) + size of data descriptor
     basefileFormat->encType = 0x0; // No encryption
     basefileFormat->compType = 0x1; // No compression
-    basefileFormat->dataSize = secInfoHeader->peSize;
+    basefileFormat->dataSize = secInfoHeader->staticFields.peSize;
     basefileFormat->zeroSize = 0x0; // We aren't going to be removing any zeroes. TODO: implement this, it can make files much smaller
 }
 
@@ -40,7 +40,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 {
     // Set table count and allocate enough memory for all tables
     importLibraries->staticFields.tableCount = peImportInfo->tableCount;
-    secInfoHeader->importTableCount = peImportInfo->tableCount;
+    secInfoHeader->staticFields.importTableCount = peImportInfo->tableCount;
 
     importLibraries->dynamicFields.importTables = calloc(importLibraries->staticFields.tableCount, sizeof(struct importTable));
 
@@ -233,7 +233,7 @@ int setImportLibsInfo(struct importLibraries *importLibraries, struct peImportIn
 
 #endif
 
-        sha1_digest(&shaContext, 0x14, i != 0 ? importTables[i - 1].staticFields.sha1 : secInfoHeader->importTableSha1);
+        sha1_digest(&shaContext, 0x14, i != 0 ? importTables[i - 1].staticFields.sha1 : secInfoHeader->staticFields.importTableSha1);
     }
 
     // Allocate offset table
@@ -315,7 +315,7 @@ int setOptHeaders(struct secInfoHeader *secInfoHeader, struct peData *peData, st
 
     // Entrypoint (0x10100)
     optHeaderEntries->optHeaderEntry[currentHeader].id = XEX_OPT_ID_ENTRYPOINT;
-    optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset = secInfoHeader->baseAddr + peData->entryPoint;
+    optHeaderEntries->optHeaderEntry[currentHeader].dataOrOffset = secInfoHeader->staticFields.baseAddr + peData->entryPoint;
     currentHeader++;
 
     // Import libraries (0x103FF)

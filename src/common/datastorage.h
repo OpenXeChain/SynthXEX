@@ -147,9 +147,19 @@ struct offsets
     uint32_t basefile;
 };
 
+// XEX header
+// --------------------
+// magic          (0x4)
+// moduleFlags    (0x4)
+// peOffset       (0x4)
+// reserved       (0x4)
+// secInfoOffset  (0x4)
+// optHeaderCount (0x4)
+// --------------------
+
 struct __attribute__((packed)) xexHeader
 {
-    char magic[4];
+    char magic[4]; // 'XEX2'
     uint32_t moduleFlags;
     uint32_t peOffset;
     uint32_t reserved;
@@ -157,13 +167,40 @@ struct __attribute__((packed)) xexHeader
     uint32_t optHeaderCount;
 };
 
+// Page descriptor
+// ------------------
+// sizeAndInfo (0x4)
+// sha1        (0x14)
+// ------------------
+
 struct __attribute__((packed)) pageDescriptor
 {
     uint32_t sizeAndInfo; // First 28 bits == size, last 4 == info (RO/RW/X)
     uint8_t sha1[0x14];
 };
 
-struct __attribute__((packed)) secInfoHeader
+// Security info header
+// --------------------------
+// headerSize       (0x4)
+// peSize           (0x4)
+// signature        (0x100)
+// imageInfoSize    (0x4)
+// imageFlags       (0x4)
+// baseAddr         (0x4)
+// imageSha1        (0x14)
+// importTableCount (0x4)
+// importTableSha1  (0x14)
+// mediaID          (0x10)
+// aesKey           (0x10)
+// exportTableAddr  (0x4)
+// headersHash      (0x14)
+// gameRegion       (0x4)
+// mediaTypes       (0x4)
+// pageDescCount    (0x4)
+// descriptors      (dynamic)
+// --------------------------
+
+struct __attribute__((packed)) secInfoHeaderStatic
 {
     uint32_t headerSize;
     uint32_t peSize;
@@ -183,8 +220,27 @@ struct __attribute__((packed)) secInfoHeader
     // - IMAGE INFO -
     uint32_t mediaTypes;
     uint32_t pageDescCount;
+};
+
+struct secInfoHeaderDynamic
+{
     struct pageDescriptor *descriptors;
 };
+
+struct secInfoHeader
+{
+    struct secInfoHeaderStatic staticFields;
+    struct secInfoHeaderDynamic dynamicFields;
+};
+
+// Basefile format
+// ---------------
+// size     (0x4)
+// encType  (0x2)
+// compType (0x2)
+// dataSize (0x4)
+// zeroSize (0x4)
+// ---------------
 
 struct __attribute__((packed)) basefileFormat
 {
@@ -259,6 +315,14 @@ struct importLibraries
     struct importLibrariesDynamic dynamicFields;
 };
 
+// TLS info
+// -----------------
+// slotCount   (0x4)
+// rawDataAddr (0x4)
+// dataSize    (0x4)
+// rawDataSize (0x4)
+// ----------------
+
 struct __attribute__((packed)) tlsInfo
 {
     uint32_t slotCount;
@@ -272,6 +336,12 @@ struct optHeaderEntries
     uint32_t count;
     struct optHeaderEntry *optHeaderEntry;
 };
+
+// Optional header entry
+// ---------------------
+// id           (0x4)
+// dataOrOffset (0x4)
+// ---------------------
 
 struct __attribute__((packed)) optHeaderEntry
 {
